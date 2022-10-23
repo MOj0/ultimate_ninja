@@ -49,6 +49,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
+
+[[package]]
 name = "audir-sles"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -549,7 +555,18 @@ version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71d89ccbdafd83d259403e22061be27bccc3254bba65cdc5303250c4227c8c8e"
 dependencies = [
- "arrayvec",
+ "arrayvec 0.5.2",
+ "euclid",
+ "num-traits",
+]
+
+[[package]]
+name = "lyon_geom"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd652c7370a873d62408f377f10333ff377956e0401759d854643de3af228d4f"
+dependencies = [
+ "arrayvec 0.7.2",
  "euclid",
  "num-traits",
 ]
@@ -560,7 +577,7 @@ version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b0a59fdf767ca0d887aa61d1b48d4bbf6a124c1a45503593f7d38ab945bfbc0"
 dependencies = [
- "lyon_geom",
+ "lyon_geom 0.17.7",
 ]
 
 [[package]]
@@ -1233,6 +1250,7 @@ version = "0.1.0"
 dependencies = [
  "glam",
  "good-web-game",
+ "lyon_geom 1.0.1",
  "oorandom",
 ]
 
