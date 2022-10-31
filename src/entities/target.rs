@@ -1,4 +1,5 @@
 use crate::assets::Assets;
+use crate::constants;
 use crate::entities;
 use crate::move_component::MoveComponent;
 use crate::sprite_component::SpriteComponent;
@@ -13,11 +14,11 @@ pub struct Target {
 }
 
 impl Target {
-    pub fn new(position: glam::Vec2, size: f32, speed: f32, assets: &Assets) -> Self {
+    pub fn new(position: glam::Vec2, assets: &Assets) -> Self {
         Self {
-            transform: TransformComponent::new(position, size),
+            transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::GREEN), // TODO: Optimize image.clone
-            move_component: MoveComponent::new(speed),
+            move_component: MoveComponent::new(constants::TARGET_SPEED),
             is_dead: false,
         }
     }

@@ -5,6 +5,7 @@ use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::GameState;
 
+use crate::constants;
 use crate::entities;
 
 pub struct Player {
@@ -15,11 +16,11 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(position: glam::Vec2, size: f32, speed: f32, assets: &Assets) -> Self {
+    pub fn new(position: glam::Vec2, assets: &Assets) -> Self {
         Self {
-            transform: TransformComponent::new(position, size),
+            transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::BLACK), // TODO: Optimize image.clone()
-            move_component: MoveComponent::new(speed),
+            move_component: MoveComponent::new(constants::PLAYER_SPEED),
             is_detected: true,
         }
     }

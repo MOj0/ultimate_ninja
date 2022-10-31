@@ -50,7 +50,7 @@ impl LookComponent {
             ),
             0.,
             constants::PI,
-            -constants::PI / 2. - look_at.angle_between(glam::vec2(1., 0.)),
+            -constants::PI / 2. - util::get_vec_angle(look_at),
         );
 
         let fov_points = vec![top_left, fov_corner1]

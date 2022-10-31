@@ -69,3 +69,10 @@ pub fn check_spotted(
     let angle = (dot / (look.look_at.length() * len_to_dest_sq.sqrt())).acos();
     return angle <= look.fov;
 }
+
+pub fn get_vec_angle(v: glam::Vec2) -> f32 {
+    if v.length_squared() == 0. {
+        return 0.;
+    }
+    v.angle_between(glam::vec2(1., 0.))
+}

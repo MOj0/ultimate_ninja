@@ -20,11 +20,6 @@ use ggez::{Context, GameResult};
 
 use oorandom::Rand32;
 
-// const WIDTH: u32 = 1024;
-// const HEIGHT: u32 = 768;
-const WIDTH: u32 = 800;
-const HEIGHT: u32 = 600;
-
 pub struct GameState {
     rng: Rand32,
     assets: Assets,
@@ -40,19 +35,11 @@ impl GameState {
 
         let assets = Assets::load(ctx, quad_ctx);
 
-        let player = entities::player::Player::new(glam::vec2(200., 200.), 8., 4., &assets);
+        let player = entities::player::Player::new(glam::vec2(200., 200.), &assets);
 
-        let target = entities::target::Target::new(glam::vec2(500., 300.), 8., 0.1, &assets);
-        let guard1 = entities::guard::Guard::new(
-            ctx,
-            quad_ctx,
-            glam::vec2(400., 400.),
-            8.,
-            0.2,
-            constants::PI / 6.,
-            200.,
-            &assets,
-        );
+        let target = entities::target::Target::new(glam::vec2(500., 300.), &assets);
+
+        let guard1 = entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), &assets);
         let guards = vec![guard1];
 
         GameState {
@@ -94,13 +81,17 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             ctx,
             quad_ctx,
             &self.player.sprite,
-            DrawParam::from((self.player.transform.position,)),
+            DrawParam::default()
+                .dest(self.player.transform.position)
+                .rotation(-util::get_vec_angle(self.player.move_component.direction)),
         )?;
         sprite_component::render(
             ctx,
             quad_ctx,
             &self.target.sprite,
-            DrawParam::from((self.target.transform.position,)),
+            DrawParam::default()
+                .dest(self.target.transform.position)
+                .rotation(-util::get_vec_angle(self.target.move_component.direction)),
         )?;
 
         self.guards
@@ -110,7 +101,9 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     ctx,
                     quad_ctx,
                     &guard.sprite,
-                    DrawParam::from((guard.transform.position,)),
+                    DrawParam::default()
+                        .dest(guard.transform.position)
+                        .rotation(-util::get_vec_angle(guard.move_component.direction)),
                 )
             })
             .count();
@@ -124,10 +117,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     &guard.look.fov_mesh,
                     DrawParam::default()
                         .dest(guard.transform.position)
-                        .rotation(
-                            -constants::PI / 2.
-                                - guard.look.look_at.angle_between(glam::vec2(1., 0.)),
-                        ),
+                        .rotation(-constants::PI / 2. - util::get_vec_angle(guard.look.look_at)),
                 )
             })
             .count();
@@ -183,8 +173,6 @@ fn main() -> GameResult {
 
     let conf = ggez::conf::Conf::default()
         .window_title("Ultimate Ninja".to_owned())
-        // .window_width(WIDTH as i32)
-        // .window_height(HEIGHT as i32)
         .physical_root_dir(Some(resource_dir));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
