@@ -1,3 +1,4 @@
+mod animation_component;
 mod assets;
 mod collision_component;
 mod constants;
@@ -35,11 +36,17 @@ impl GameState {
 
         let assets = Assets::load(ctx, quad_ctx);
 
-        let player = entities::player::Player::new(glam::vec2(200., 200.), &assets);
+        let player_animation =
+            util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::BLACK);
+        let player = entities::player::Player::new(glam::vec2(200., 200.), player_animation);
 
-        let target = entities::target::Target::new(glam::vec2(500., 300.), &assets);
+        let target_animation =
+            util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::GREEN);
+        let target = entities::target::Target::new(glam::vec2(500., 300.), target_animation);
 
-        let guard1 = entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), &assets);
+        let guard_animation = util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::RED);
+        let guard1 =
+            entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), guard_animation);
         let guards = vec![guard1];
 
         GameState {
@@ -58,11 +65,13 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         ctx: &mut Context,
         _quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        entities::player::system(self);
+        let dt = ggez::timer::delta(ctx).as_secs_f32();
 
-        entities::guard::system(self, ctx);
+        entities::player::system(self, dt);
 
-        self.target.update_movement();
+        entities::guard::system(self, dt);
+
+        self.target.update(dt);
 
         Ok(())
     }
@@ -80,7 +89,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         sprite_component::render(
             ctx,
             quad_ctx,
-            &self.player.sprite,
+            &self.player.animation.get_curr_frame(),
             DrawParam::default()
                 .dest(self.player.transform.position)
                 .rotation(-util::get_vec_angle(self.player.move_component.direction)),
@@ -88,7 +97,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         sprite_component::render(
             ctx,
             quad_ctx,
-            &self.target.sprite,
+            &self.target.animation.get_curr_frame(),
             DrawParam::default()
                 .dest(self.target.transform.position)
                 .rotation(-util::get_vec_angle(self.target.move_component.direction)),
@@ -100,7 +109,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 sprite_component::render(
                     ctx,
                     quad_ctx,
-                    &guard.sprite,
+                    &guard.animation.get_curr_frame(),
                     DrawParam::default()
                         .dest(guard.transform.position)
                         .rotation(-util::get_vec_angle(guard.move_component.direction)),
@@ -127,6 +136,15 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             quad_ctx,
             &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
             graphics::DrawParam::from((glam::vec2(4., 8.),)),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(
+                format!("is_player_detected: {}", self.player.is_detected),
+                24.,
+            ),
+            graphics::DrawParam::from((glam::vec2(4., 32.),)),
         )?;
 
         Ok(())

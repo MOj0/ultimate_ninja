@@ -1,16 +1,15 @@
-use crate::assets::Assets;
+use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::constants;
 use crate::entities;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
-use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::GameState;
 
 pub struct Guard {
     pub transform: TransformComponent,
-    pub sprite: SpriteComponent,
+    pub animation: AnimationComponent,
     pub move_component: MoveComponent,
     pub look: LookComponent,
     pub tmp_counter: f32,
@@ -21,11 +20,11 @@ impl Guard {
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         position: glam::Vec2,
-        assets: &Assets,
+        animation: AnimationComponent,
     ) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
-            sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::RED), // TODO: Optimize the image.clone()
+            animation,
             move_component: MoveComponent::new(constants::GUARD_SPEED),
             look: LookComponent::new(
                 ctx,
@@ -44,14 +43,19 @@ impl Guard {
         self.look.look_at = self.move_component.direction;
 
         entities::move_entity(&mut self.transform, &self.move_component);
+        self.animation.update(dt);
+
+        if self.move_component.direction.length_squared() == 0. {
+            self.animation.set_animation_state(AnimationState::Idle);
+        } else {
+            self.animation.set_animation_state(AnimationState::Active);
+        }
 
         self.tmp_counter += dt;
     }
 }
 
-pub fn system(game_state: &mut GameState, ctx: &mut ggez::Context) {
-    let dt = ggez::timer::delta(ctx).as_secs_f32();
-
+pub fn system(game_state: &mut GameState, dt: f32) {
     if is_player_detected(game_state) {
         game_state.player.is_detected = true;
     } else {

@@ -1,6 +1,5 @@
-use crate::assets::Assets;
+use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::move_component::MoveComponent;
-use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::GameState;
@@ -10,16 +9,17 @@ use crate::entities;
 
 pub struct Player {
     pub transform: TransformComponent,
-    pub sprite: SpriteComponent,
+    pub animation: AnimationComponent,
     pub move_component: MoveComponent,
+
     pub is_detected: bool,
 }
 
 impl Player {
-    pub fn new(position: glam::Vec2, assets: &Assets) -> Self {
+    pub fn new(position: glam::Vec2, animation: AnimationComponent) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
-            sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::BLACK), // TODO: Optimize image.clone()
+            animation,
             move_component: MoveComponent::new(constants::PLAYER_SPEED),
             is_detected: true,
         }
@@ -35,22 +35,21 @@ impl Player {
         self.move_component.set_y_dir(y_dir);
     }
 
-    #[inline]
-    pub fn update(&mut self) {
+    pub fn update(&mut self, dt: f32) {
         entities::move_entity(&mut self.transform, &self.move_component);
-
-        let player_color = if self.is_detected {
-            ggez::graphics::Color::BLUE
-        } else {
-            ggez::graphics::Color::BLACK
-        };
-        self.sprite.set_color(player_color);
+        self.animation.update(dt);
     }
 }
 
-pub fn system(game_state: &mut GameState) {
+pub fn system(game_state: &mut GameState, dt: f32) {
     let player = &mut game_state.player;
-    player.update();
+    player.update(dt);
+
+    if player.move_component.direction.length_squared() == 0. {
+        player.animation.set_animation_state(AnimationState::Idle);
+    } else {
+        player.animation.set_animation_state(AnimationState::Active);
+    }
 
     let target = &mut game_state.target;
     if util::check_collision(&player.transform, &target.transform) {
