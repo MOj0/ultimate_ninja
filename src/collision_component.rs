@@ -1,23 +1,29 @@
-use crate::transform_component::TransformComponent;
-
-pub struct CollisionComponent {
-    pub size: f32,
+pub struct AABBCollisionComponent {
+    pub rect: ggez::graphics::Rect,
+    pub colliding_components: (bool, bool),
 }
 
-// TODO: Finish this collision component (but it is easier to just use Transform component??)
-impl CollisionComponent {
-    pub fn new(size: f32) -> Self {
-        Self { size }
+impl AABBCollisionComponent {
+    pub fn new(rect: ggez::graphics::Rect) -> Self {
+        Self {
+            rect,
+            colliding_components: (false, false),
+        }
     }
 
-    pub fn is_player_detected(
-        &self,
-        transform: &TransformComponent,
-        player_transform: &TransformComponent,
-    ) -> bool {
-        let vec_to_player = player_transform.position - transform.position;
-        let len_to_player_sq = vec_to_player.length_squared();
+    #[inline]
+    pub fn check_collision(&self, other_rect: &ggez::graphics::Rect) -> bool {
+        self.rect.overlaps(&other_rect)
+    }
 
-        return len_to_player_sq <= (player_transform.size + transform.size).powi(2);
+    /// Assume: self and other_rect are colliding
+    pub fn get_colliding_components(&self, entity_rect: &ggez::graphics::Rect) -> (bool, bool) {
+        if entity_rect.right() <= self.rect.left() || entity_rect.left() >= self.rect.right() {
+            return (true, false);
+        }
+        if entity_rect.bottom() <= self.rect.top() || entity_rect.top() >= self.rect.bottom() {
+            return (false, true);
+        }
+        (false, false)
     }
 }

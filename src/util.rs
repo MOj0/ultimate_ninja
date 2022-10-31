@@ -1,5 +1,6 @@
 use crate::animation_component::AnimationComponent;
 use crate::assets::Assets;
+use crate::constants;
 use crate::look_component::LookComponent;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
@@ -85,22 +86,22 @@ pub fn build_walk_animation(
     duration: f32,
     color: ggez::graphics::Color,
 ) -> AnimationComponent {
-    let s1 = SpriteComponent::new(assets.stand.clone(), color);
-    let s2 = SpriteComponent::new(assets.walk_l1.clone(), color);
-    let s3 = SpriteComponent::new(assets.walk_l2.clone(), color);
-    let s4 = SpriteComponent::new(assets.walk_l3.clone(), color);
-    let s5 = SpriteComponent::new(assets.walk_l4.clone(), color);
-    let s6 = SpriteComponent::new(assets.walk_l3.clone(), color);
-    let s7 = SpriteComponent::new(assets.walk_l2.clone(), color);
-    let s8 = SpriteComponent::new(assets.walk_l1.clone(), color);
-    let s9 = SpriteComponent::new(assets.stand.clone(), color);
-    let s10 = SpriteComponent::new(assets.walk_r1.clone(), color);
-    let s11 = SpriteComponent::new(assets.walk_r2.clone(), color);
-    let s12 = SpriteComponent::new(assets.walk_r3.clone(), color);
-    let s13 = SpriteComponent::new(assets.walk_r4.clone(), color);
-    let s14 = SpriteComponent::new(assets.walk_r3.clone(), color);
-    let s15 = SpriteComponent::new(assets.walk_r2.clone(), color);
-    let s16 = SpriteComponent::new(assets.walk_r1.clone(), color);
+    let s1 = SpriteComponent::new(assets.stand.clone(), color).scale(constants::SPRITE_SCALE);
+    let s2 = SpriteComponent::new(assets.walk_l1.clone(), color).scale(constants::SPRITE_SCALE);
+    let s3 = SpriteComponent::new(assets.walk_l2.clone(), color).scale(constants::SPRITE_SCALE);
+    let s4 = SpriteComponent::new(assets.walk_l3.clone(), color).scale(constants::SPRITE_SCALE);
+    let s5 = SpriteComponent::new(assets.walk_l4.clone(), color).scale(constants::SPRITE_SCALE);
+    let s6 = SpriteComponent::new(assets.walk_l3.clone(), color).scale(constants::SPRITE_SCALE);
+    let s7 = SpriteComponent::new(assets.walk_l2.clone(), color).scale(constants::SPRITE_SCALE);
+    let s8 = SpriteComponent::new(assets.walk_l1.clone(), color).scale(constants::SPRITE_SCALE);
+    let s9 = SpriteComponent::new(assets.stand.clone(), color).scale(constants::SPRITE_SCALE);
+    let s10 = SpriteComponent::new(assets.walk_r1.clone(), color).scale(constants::SPRITE_SCALE);
+    let s11 = SpriteComponent::new(assets.walk_r2.clone(), color).scale(constants::SPRITE_SCALE);
+    let s12 = SpriteComponent::new(assets.walk_r3.clone(), color).scale(constants::SPRITE_SCALE);
+    let s13 = SpriteComponent::new(assets.walk_r4.clone(), color).scale(constants::SPRITE_SCALE);
+    let s14 = SpriteComponent::new(assets.walk_r3.clone(), color).scale(constants::SPRITE_SCALE);
+    let s15 = SpriteComponent::new(assets.walk_r2.clone(), color).scale(constants::SPRITE_SCALE);
+    let s16 = SpriteComponent::new(assets.walk_r1.clone(), color).scale(constants::SPRITE_SCALE);
 
     let animation = vec![
         s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16,

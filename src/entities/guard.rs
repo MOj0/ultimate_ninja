@@ -42,7 +42,7 @@ impl Guard {
             .set_direction_normalized(glam::vec2(self.tmp_counter.cos(), -self.tmp_counter.sin()));
         self.look.look_at = self.move_component.direction;
 
-        entities::move_entity(&mut self.transform, &self.move_component);
+        entities::move_entity(&mut self.transform, &self.move_component, (false, false)); // TODO: calculate collision instead of (false, false)
         self.animation.update(dt);
 
         if self.move_component.direction.length_squared() == 0. {

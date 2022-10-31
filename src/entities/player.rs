@@ -1,4 +1,5 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
+use crate::collision_component::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
@@ -11,6 +12,7 @@ pub struct Player {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
     pub move_component: MoveComponent,
+    pub aabb: AABBCollisionComponent,
 
     pub is_detected: bool,
 }
@@ -21,6 +23,12 @@ impl Player {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             animation,
             move_component: MoveComponent::new(constants::PLAYER_SPEED),
+            aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
+                position.x,
+                position.y,
+                constants::ENTITY_SIZE,
+                constants::ENTITY_SIZE,
+            )),
             is_detected: true,
         }
     }
@@ -35,9 +43,25 @@ impl Player {
         self.move_component.set_y_dir(y_dir);
     }
 
+    #[inline]
+    pub fn set_colliding_components(&mut self, colliding_components: (bool, bool)) {
+        self.aabb.colliding_components = colliding_components;
+    }
+
     pub fn update(&mut self, dt: f32) {
-        entities::move_entity(&mut self.transform, &self.move_component);
+        entities::move_entity(
+            &mut self.transform,
+            &self.move_component,
+            self.aabb.colliding_components,
+        );
+        self.aabb.rect.move_to(self.transform.position);
         self.animation.update(dt);
+    }
+
+    pub fn get_rect_of_next_move(&self) -> ggez::graphics::Rect {
+        let new_pos =
+            self.transform.position + self.move_component.direction * self.move_component.speed;
+        ggez::graphics::Rect::new(new_pos.x, new_pos.y, self.aabb.rect.w, self.aabb.rect.h)
     }
 }
 

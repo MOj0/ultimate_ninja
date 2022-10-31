@@ -25,7 +25,7 @@ impl Target {
     pub fn update(&mut self, dt: f32) {
         self.move_component
             .set_direction_normalized(glam::vec2(-1., 0.));
-        entities::move_entity(&mut self.transform, &self.move_component);
+        entities::move_entity(&mut self.transform, &self.move_component, (false, false)); // TODO: calculate collision instead of (false, false)
 
         self.animation.update(dt);
         if self.move_component.direction.length_squared() == 0. {

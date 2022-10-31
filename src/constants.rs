@@ -5,6 +5,7 @@ pub const HEIGHT: u32 = 600;
 
 pub const PI: f32 = std::f32::consts::PI;
 
+pub const SPRITE_SIZE: u32 = 108;
 pub const SPRITE_SCALE: glam::Vec2 = glam::vec2(0.33, 0.33);
 
 pub const ENTITY_SIZE: f32 = 8.;

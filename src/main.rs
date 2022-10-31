@@ -10,6 +10,7 @@ mod transform_component;
 mod util;
 
 use crate::assets::Assets;
+use crate::sprite_component::SpriteComponent;
 
 extern crate good_web_game as ggez;
 
@@ -27,6 +28,7 @@ pub struct GameState {
     player: entities::player::Player,
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
+    walls: Vec<entities::wall::Wall>,
 }
 
 impl GameState {
@@ -38,7 +40,7 @@ impl GameState {
 
         let player_animation =
             util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::BLACK);
-        let player = entities::player::Player::new(glam::vec2(200., 200.), player_animation);
+        let player = entities::player::Player::new(glam::vec2(200., 400.), player_animation);
 
         let target_animation =
             util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::GREEN);
@@ -49,12 +51,17 @@ impl GameState {
             entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), guard_animation);
         let guards = vec![guard1];
 
+        let box_sprite = SpriteComponent::new(assets.box1.clone(), ggez::graphics::Color::WHITE);
+        let box1 = entities::wall::Wall::new(glam::vec2(100., 100.), 400., 200., box_sprite);
+        let walls = vec![box1];
+
         GameState {
             rng,
             assets,
             player,
             target,
             guards,
+            walls,
         }
     }
 }
@@ -67,11 +74,13 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
     ) -> Result<(), ggez::GameError> {
         let dt = ggez::timer::delta(ctx).as_secs_f32();
 
+        entities::wall::system(self);
+
         entities::player::system(self, dt);
 
-        entities::guard::system(self, dt);
-
         self.target.update(dt);
+
+        entities::guard::system(self, dt);
 
         Ok(())
     }
@@ -84,9 +93,9 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         let gray = graphics::Color::new(0.5, 0.5, 0.5, 1.);
         graphics::clear(ctx, quad_ctx, gray);
 
-        use ggez::graphics::DrawParam;
+        use graphics::DrawParam;
 
-        sprite_component::render(
+        sprite_component::render_sprite(
             ctx,
             quad_ctx,
             &self.player.animation.get_curr_frame(),
@@ -94,7 +103,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 .dest(self.player.transform.position)
                 .rotation(-util::get_vec_angle(self.player.move_component.direction)),
         )?;
-        sprite_component::render(
+
+        sprite_component::render_sprite(
             ctx,
             quad_ctx,
             &self.target.animation.get_curr_frame(),
@@ -106,7 +116,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         self.guards
             .iter()
             .map(|guard| {
-                sprite_component::render(
+                sprite_component::render_sprite(
                     ctx,
                     quad_ctx,
                     &guard.animation.get_curr_frame(),
@@ -131,11 +141,25 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             })
             .count();
 
+        self.walls
+            .iter()
+            .map(|wall| {
+                sprite_component::render(
+                    ctx,
+                    quad_ctx,
+                    &wall.sprite,
+                    DrawParam::default()
+                        .dest(wall.transform.position)
+                        .scale(wall.sprite.scale),
+                )
+            })
+            .count();
+
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-            graphics::DrawParam::from((glam::vec2(4., 8.),)),
+            DrawParam::from((glam::vec2(4., 8.),)),
         )?;
         graphics::draw(
             ctx,
@@ -144,7 +168,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 format!("is_player_detected: {}", self.player.is_detected),
                 24.,
             ),
-            graphics::DrawParam::from((glam::vec2(4., 32.),)),
+            DrawParam::from((glam::vec2(4., 32.),)),
         )?;
 
         Ok(())
