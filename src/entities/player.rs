@@ -1,3 +1,4 @@
+use crate::assets::Assets;
 use crate::move_component::MoveComponent;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
@@ -14,10 +15,10 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(position: glam::Vec2, size: f32, speed: f32) -> Self {
+    pub fn new(position: glam::Vec2, size: f32, speed: f32, assets: &Assets) -> Self {
         Self {
             transform: TransformComponent::new(position, size),
-            sprite: SpriteComponent::new(),
+            sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::BLACK), // TODO: Optimize image.clone()
             move_component: MoveComponent::new(speed),
             is_detected: true,
         }
@@ -42,14 +43,7 @@ impl Player {
         } else {
             ggez::graphics::Color::BLACK
         };
-
-        self.sprite.new_circle(
-            ggez::graphics::DrawMode::fill(),
-            self.transform.position,
-            self.transform.size,
-            0.25,
-            player_color,
-        );
+        self.sprite.set_color(player_color);
     }
 }
 

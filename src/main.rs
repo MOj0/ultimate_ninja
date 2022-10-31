@@ -1,3 +1,4 @@
+mod assets;
 mod collision_component;
 mod constants;
 mod entities;
@@ -7,6 +8,8 @@ mod sprite_component;
 mod transform_component;
 mod util;
 
+use crate::assets::Assets;
+
 extern crate good_web_game as ggez;
 
 use ggez::event::{KeyCode, KeyMods};
@@ -14,8 +17,6 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics};
 use ggez::{Context, GameResult};
-
-use std::f32::consts::PI;
 
 use oorandom::Rand32;
 
@@ -26,25 +27,37 @@ const HEIGHT: u32 = 600;
 
 pub struct GameState {
     rng: Rand32,
+    assets: Assets,
     player: entities::player::Player,
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
 }
 
 impl GameState {
-    pub fn new(_ctx: &mut Context, _quad_ctx: &mut miniquad::GraphicsContext) -> Self {
+    pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
         let seed = 123456;
         let mut rng = oorandom::Rand32::new(seed);
 
-        let player = entities::player::Player::new(glam::vec2(200., 200.), 10., 4.);
+        let assets = Assets::load(ctx, quad_ctx);
 
-        let target = entities::target::Target::new(glam::vec2(500., 300.), 10., 0.1);
+        let player = entities::player::Player::new(glam::vec2(200., 200.), 8., 4., &assets);
 
-        let guard1 = entities::guard::Guard::new(glam::vec2(400., 400.), 10., 0.2, PI / 6., 200.);
+        let target = entities::target::Target::new(glam::vec2(500., 300.), 8., 0.1, &assets);
+        let guard1 = entities::guard::Guard::new(
+            ctx,
+            quad_ctx,
+            glam::vec2(400., 400.),
+            8.,
+            0.2,
+            constants::PI / 6.,
+            200.,
+            &assets,
+        );
         let guards = vec![guard1];
 
         GameState {
             rng,
+            assets,
             player,
             target,
             guards,
@@ -75,17 +88,48 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         let gray = graphics::Color::new(0.5, 0.5, 0.5, 1.);
         graphics::clear(ctx, quad_ctx, gray);
 
-        sprite_component::render(ctx, quad_ctx, &self.player.sprite)?;
-        sprite_component::render(ctx, quad_ctx, &self.target.sprite)?;
+        use ggez::graphics::DrawParam;
+
+        sprite_component::render(
+            ctx,
+            quad_ctx,
+            &self.player.sprite,
+            DrawParam::from((self.player.transform.position,)),
+        )?;
+        sprite_component::render(
+            ctx,
+            quad_ctx,
+            &self.target.sprite,
+            DrawParam::from((self.target.transform.position,)),
+        )?;
 
         self.guards
             .iter()
-            .map(|guard| sprite_component::render(ctx, quad_ctx, &guard.sprite))
+            .map(|guard| {
+                sprite_component::render(
+                    ctx,
+                    quad_ctx,
+                    &guard.sprite,
+                    DrawParam::from((guard.transform.position,)),
+                )
+            })
             .count();
 
         self.guards
             .iter()
-            .map(|guard| sprite_component::render(ctx, quad_ctx, &guard.look.sprite))
+            .map(|guard| {
+                sprite_component::render_mesh(
+                    ctx,
+                    quad_ctx,
+                    &guard.look.fov_mesh,
+                    DrawParam::default()
+                        .dest(guard.transform.position)
+                        .rotation(
+                            -constants::PI / 2.
+                                - guard.look.look_at.angle_between(glam::vec2(1., 0.)),
+                        ),
+                )
+            })
             .count();
 
         graphics::draw(
@@ -135,7 +179,13 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 }
 
 fn main() -> GameResult {
-    let conf = ggez::conf::Conf::default().window_title("Ultimate Ninja".to_owned());
+    let resource_dir = std::path::PathBuf::from("./resources");
+
+    let conf = ggez::conf::Conf::default()
+        .window_title("Ultimate Ninja".to_owned())
+        // .window_width(WIDTH as i32)
+        // .window_height(HEIGHT as i32)
+        .physical_root_dir(Some(resource_dir));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
         Box::new(GameState::new(&mut context, &mut quad_ctx))

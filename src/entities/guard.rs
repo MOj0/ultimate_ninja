@@ -1,3 +1,4 @@
+use crate::assets::Assets;
 use crate::entities;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
@@ -15,12 +16,21 @@ pub struct Guard {
 }
 
 impl Guard {
-    pub fn new(position: glam::Vec2, size: f32, speed: f32, fov: f32, view_distance: f32) -> Self {
+    pub fn new(
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        position: glam::Vec2,
+        size: f32,
+        speed: f32,
+        fov: f32,
+        view_distance: f32,
+        assets: &Assets,
+    ) -> Self {
         Self {
             transform: TransformComponent::new(position, size),
-            sprite: SpriteComponent::new(),
+            sprite: SpriteComponent::new(assets.stand.clone(), ggez::graphics::Color::RED), // TODO: Optimize the image.clone()
             move_component: MoveComponent::new(speed),
-            look: LookComponent::new(glam::Vec2::default(), fov, view_distance),
+            look: LookComponent::new(ctx, quad_ctx, glam::vec2(0., 1.), fov, view_distance),
             tmp_counter: 0.,
         }
     }
@@ -31,16 +41,6 @@ impl Guard {
         self.look.look_at = self.move_component.direction;
 
         entities::move_entity(&mut self.transform, &self.move_component);
-
-        self.sprite.new_circle(
-            ggez::graphics::DrawMode::fill(),
-            self.transform.position,
-            self.transform.size,
-            0.25,
-            ggez::graphics::Color::RED,
-        );
-
-        self.look.make_look_polygon(&self.transform);
 
         self.tmp_counter += dt;
     }

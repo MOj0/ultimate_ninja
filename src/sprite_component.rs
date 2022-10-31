@@ -1,38 +1,19 @@
+use crate::constants;
 use ggez::miniquad;
 use ggez::{graphics, Context, GameResult};
 
 pub struct SpriteComponent {
-    pub mesh_builder: graphics::MeshBuilder, // TODO: Change to Image once you have a spritesheet
+    pub image: graphics::Image,
+    pub color: graphics::Color,
 }
 
 impl SpriteComponent {
-    pub fn new() -> Self {
-        SpriteComponent {
-            mesh_builder: graphics::MeshBuilder::new(),
-        }
+    pub fn new(image: graphics::Image, color: graphics::Color) -> Self {
+        SpriteComponent { image, color }
     }
 
-    pub fn new_circle(
-        &mut self,
-        mode: graphics::DrawMode,
-        point: glam::Vec2,
-        radius: f32,
-        tolerance: f32,
-        color: graphics::Color,
-    ) {
-        self.mesh_builder = graphics::MeshBuilder::new();
-        self.mesh_builder
-            .circle(mode, point, radius, tolerance, color)
-            .unwrap();
-    }
-    pub fn new_polygon(
-        &mut self,
-        mode: graphics::DrawMode,
-        points: &Vec<glam::Vec2>,
-        color: graphics::Color,
-    ) {
-        self.mesh_builder = graphics::MeshBuilder::new();
-        self.mesh_builder.polygon(mode, points, color).unwrap();
+    pub fn set_color(&mut self, color: graphics::Color) {
+        self.color = color;
     }
 }
 
@@ -40,9 +21,24 @@ pub fn render(
     ctx: &mut Context,
     quad_ctx: &mut miniquad::Context,
     sprite: &SpriteComponent,
+    draw_param: graphics::DrawParam,
 ) -> GameResult {
-    // TODO: For now everything is a mesh -> make a spritesheet and draw Image objects instead
+    graphics::draw(
+        ctx,
+        quad_ctx,
+        &sprite.image,
+        draw_param
+            .scale(constants::SPRITE_SCALE)
+            .offset(glam::vec2(0.5, 0.5))
+            .color(sprite.color),
+    )
+}
 
-    let mesh = sprite.mesh_builder.build(ctx, quad_ctx).unwrap();
-    graphics::draw(ctx, quad_ctx, &mesh, graphics::DrawParam::default())
+pub fn render_mesh(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::Context,
+    mesh: &graphics::Mesh,
+    draw_param: graphics::DrawParam,
+) -> GameResult {
+    graphics::draw(ctx, quad_ctx, mesh, draw_param)
 }

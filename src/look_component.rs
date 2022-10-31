@@ -1,31 +1,45 @@
 use crate::constants;
-use crate::sprite_component::SpriteComponent;
-use crate::transform_component::TransformComponent;
 use crate::util;
 
 pub struct LookComponent {
     pub look_at: glam::Vec2,
     pub fov: f32,
     pub view_distance: f32,
-    pub sprite: SpriteComponent,
+    pub fov_mesh: ggez::graphics::Mesh,
 }
 
 impl LookComponent {
-    pub fn new(look_at: glam::Vec2, fov: f32, view_distance: f32) -> Self {
+    pub fn new(
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        look_at: glam::Vec2,
+        fov: f32,
+        view_distance: f32,
+    ) -> Self {
+        let fov_points = Self::make_fov_points(look_at, fov, view_distance);
+        let fov_mesh = ggez::graphics::Mesh::new_polygon(
+            ctx,
+            quad_ctx,
+            ggez::graphics::DrawMode::fill(),
+            &fov_points,
+            ggez::graphics::Color::from_rgba(127, 0, 0, 127),
+        )
+        .unwrap();
+
         Self {
             look_at,
             fov,
             view_distance,
-            sprite: SpriteComponent::new(),
+            fov_mesh,
         }
     }
 
-    pub fn make_look_polygon(&mut self, transform: &TransformComponent) {
-        let line_of_sight = transform.position + self.look_at * self.view_distance;
-        let fov_corner1 =
-            util::rotate_point_around_center(line_of_sight, transform.position, -self.fov);
-        let fov_corner2 =
-            util::rotate_point_around_center(line_of_sight, transform.position, self.fov);
+    fn make_fov_points(look_at: glam::Vec2, fov: f32, view_distance: f32) -> Vec<glam::Vec2> {
+        let top_left = glam::vec2(0., 0.);
+
+        let line_of_sight = top_left + look_at * view_distance;
+        let fov_corner1 = util::rotate_point_around_center(line_of_sight, top_left, -fov);
+        let fov_corner2 = util::rotate_point_around_center(line_of_sight, top_left, fov);
         let intersection = (fov_corner1 - fov_corner2) / 2. + fov_corner2;
 
         let arc_points = util::get_arc_points(
@@ -36,24 +50,15 @@ impl LookComponent {
             ),
             0.,
             constants::PI,
-            -constants::PI / 2. - self.look_at.angle_between(glam::vec2(1., 0.)),
+            -constants::PI / 2. - look_at.angle_between(glam::vec2(1., 0.)),
         );
 
-        let fov_points = vec![transform.position, fov_corner1]
+        let fov_points = vec![top_left, fov_corner1]
             .into_iter()
             .chain(arc_points)
             .chain(std::iter::once(fov_corner2))
             .collect::<Vec<glam::Vec2>>();
 
-        self.sprite.new_polygon(
-            ggez::graphics::DrawMode::fill(),
-            &fov_points,
-            ggez::graphics::Color {
-                r: 0.5,
-                g: 0.,
-                b: 0.,
-                a: 0.5,
-            },
-        );
+        return fov_points;
     }
 }
