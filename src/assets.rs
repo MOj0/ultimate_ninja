@@ -18,19 +18,19 @@ pub struct Assets {
 
 impl Assets {
     pub fn load(ctx: &mut Context, quad_ctx: &mut ggez::miniquad::GraphicsContext) -> Self {
-        let stand = graphics::Image::new(ctx, quad_ctx, "/stand.png").unwrap();
-        let walk_l1 = graphics::Image::new(ctx, quad_ctx, "/walk_l1.png").unwrap();
-        let walk_l2 = graphics::Image::new(ctx, quad_ctx, "/walk_l2.png").unwrap();
-        let walk_l3 = graphics::Image::new(ctx, quad_ctx, "/walk_l3.png").unwrap();
-        let walk_l4 = graphics::Image::new(ctx, quad_ctx, "/walk_l4.png").unwrap();
-        let walk_r1 = graphics::Image::new(ctx, quad_ctx, "/walk_r1.png").unwrap();
-        let walk_r2 = graphics::Image::new(ctx, quad_ctx, "/walk_r2.png").unwrap();
-        let walk_r3 = graphics::Image::new(ctx, quad_ctx, "/walk_r3.png").unwrap();
-        let walk_r4 = graphics::Image::new(ctx, quad_ctx, "/walk_r4.png").unwrap();
+        let stand = graphics::Image::new(ctx, quad_ctx, "/textures/stand.png").unwrap();
+        let walk_l1 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l1.png").unwrap();
+        let walk_l2 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l2.png").unwrap();
+        let walk_l3 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l3.png").unwrap();
+        let walk_l4 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l4.png").unwrap();
+        let walk_r1 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r1.png").unwrap();
+        let walk_r2 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r2.png").unwrap();
+        let walk_r3 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r3.png").unwrap();
+        let walk_r4 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r4.png").unwrap();
 
-        let wall = graphics::Image::new(ctx, quad_ctx, "/wall.png").unwrap();
-        let box1 = graphics::Image::new(ctx, quad_ctx, "/box1.png").unwrap();
-        let box2 = graphics::Image::new(ctx, quad_ctx, "/box2.png").unwrap();
+        let wall = graphics::Image::new(ctx, quad_ctx, "/textures/wall.png").unwrap();
+        let box1 = graphics::Image::new(ctx, quad_ctx, "/textures/box1.png").unwrap();
+        let box2 = graphics::Image::new(ctx, quad_ctx, "/textures/box2.png").unwrap();
 
         Assets {
             stand,

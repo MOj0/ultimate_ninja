@@ -6,6 +6,7 @@ use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
+use crate::Assets;
 use crate::GameState;
 
 pub struct Guard {
@@ -23,11 +24,16 @@ impl Guard {
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         position: glam::Vec2,
-        animation: AnimationComponent,
+        assets: &Assets,
+        color: ggez::graphics::Color,
     ) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
-            animation,
+            animation: util::build_walk_animation(
+                &assets,
+                util::compute_animation_duration(constants::GUARD_SPEED),
+                color,
+            ),
             move_component: MoveComponent::new(constants::GUARD_SPEED),
             look: LookComponent::new(
                 ctx,

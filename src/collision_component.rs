@@ -19,6 +19,7 @@ impl AABBCollisionComponent {
     /// Assume: self and other_rect are colliding
     /// Returns: (x_axis_colliding, y_axis_colliding)
     pub fn get_colliding_axis(&self, entity_rect: &ggez::graphics::Rect) -> (bool, bool) {
+        // TODO: Fix edge case
         if entity_rect.right() <= self.rect.left() || entity_rect.left() >= self.rect.right() {
             return (true, false);
         }

@@ -3,6 +3,7 @@ mod assets;
 mod collision_component;
 mod constants;
 mod entities;
+mod level;
 mod look_component;
 mod move_component;
 mod sprite_component;
@@ -24,7 +25,6 @@ use oorandom::Rand32;
 
 pub struct GameState {
     rng: Rand32,
-    assets: Assets,
     player: entities::player::Player,
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
@@ -38,35 +38,29 @@ impl GameState {
 
         let assets = Assets::load(ctx, quad_ctx);
 
-        let player_animation =
-            util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::BLACK);
-        let player = entities::player::Player::new(glam::vec2(200., 400.), player_animation);
+        let player = entities::player::Player::new(
+            glam::Vec2::default(),
+            &assets,
+            ggez::graphics::Color::BLACK,
+        );
 
-        let target_animation =
-            util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::GREEN);
-        let target = entities::target::Target::new(glam::vec2(500., 300.), target_animation);
+        let target = entities::target::Target::new(
+            glam::Vec2::default(),
+            &assets,
+            ggez::graphics::Color::GREEN,
+        );
 
-        let guard_animation = util::build_walk_animation(&assets, 0.05, ggez::graphics::Color::RED);
-        let guard1 =
-            entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), guard_animation);
-        let guards = vec![guard1];
-
-        let box1_sprite = SpriteComponent::new(assets.box1.clone(), ggez::graphics::Color::WHITE);
-        let box1 = entities::wall::Wall::new(glam::vec2(100., 100.), 200., 100., box1_sprite);
-        let box2_sprite = SpriteComponent::new(assets.box2.clone(), ggez::graphics::Color::WHITE);
-        let box2 = entities::wall::Wall::new(glam::vec2(80., 200.), 100., 400., box2_sprite);
-        let wall_sprite = SpriteComponent::new(assets.wall.clone(), ggez::graphics::Color::WHITE);
-        let wall1 = entities::wall::Wall::new(glam::vec2(250., 80.), 300., 100., wall_sprite);
-        let walls = vec![box1, box2, wall1];
-
-        GameState {
+        let mut game_state = GameState {
             rng,
-            assets,
             player,
             target,
-            guards,
-            walls,
-        }
+            guards: vec![],
+            walls: vec![],
+        };
+
+        level::load_level(ctx, quad_ctx, &mut game_state, &assets, 0);
+
+        game_state
     }
 }
 

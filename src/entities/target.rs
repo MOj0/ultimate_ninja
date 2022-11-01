@@ -4,6 +4,8 @@ use crate::entities;
 use crate::entities::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
+use crate::util;
+use crate::Assets;
 
 pub struct Target {
     pub transform: TransformComponent,
@@ -15,10 +17,14 @@ pub struct Target {
 }
 
 impl Target {
-    pub fn new(position: glam::Vec2, animation: AnimationComponent) -> Self {
+    pub fn new(position: glam::Vec2, assets: &Assets, color: ggez::graphics::Color) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
-            animation,
+            animation: util::build_walk_animation(
+                &assets,
+                util::compute_animation_duration(constants::TARGET_SPEED),
+                color,
+            ),
             move_component: MoveComponent::new(constants::TARGET_SPEED),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,

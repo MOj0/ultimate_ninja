@@ -3,6 +3,7 @@ use crate::collision_component::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
+use crate::Assets;
 use crate::GameState;
 
 use crate::constants;
@@ -18,10 +19,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(position: glam::Vec2, animation: AnimationComponent) -> Self {
+    pub fn new(position: glam::Vec2, assets: &Assets, color: ggez::graphics::Color) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
-            animation,
+            animation: util::build_walk_animation(
+                &assets,
+                util::compute_animation_duration(constants::PLAYER_SPEED),
+                color,
+            ),
             move_component: MoveComponent::new(constants::PLAYER_SPEED),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,
