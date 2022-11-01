@@ -55,7 +55,9 @@ impl GameState {
         let box1 = entities::wall::Wall::new(glam::vec2(100., 100.), 200., 100., box1_sprite);
         let box2_sprite = SpriteComponent::new(assets.box2.clone(), ggez::graphics::Color::WHITE);
         let box2 = entities::wall::Wall::new(glam::vec2(80., 200.), 100., 400., box2_sprite);
-        let walls = vec![box1, box2];
+        let wall_sprite = SpriteComponent::new(assets.wall.clone(), ggez::graphics::Color::WHITE);
+        let wall1 = entities::wall::Wall::new(glam::vec2(250., 80.), 300., 100., wall_sprite);
+        let walls = vec![box1, box2, wall1];
 
         GameState {
             rng,
