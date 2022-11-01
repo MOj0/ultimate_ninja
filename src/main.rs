@@ -51,9 +51,11 @@ impl GameState {
             entities::guard::Guard::new(ctx, quad_ctx, glam::vec2(400., 400.), guard_animation);
         let guards = vec![guard1];
 
-        let box_sprite = SpriteComponent::new(assets.box1.clone(), ggez::graphics::Color::WHITE);
-        let box1 = entities::wall::Wall::new(glam::vec2(100., 100.), 400., 200., box_sprite);
-        let walls = vec![box1];
+        let box1_sprite = SpriteComponent::new(assets.box1.clone(), ggez::graphics::Color::WHITE);
+        let box1 = entities::wall::Wall::new(glam::vec2(100., 100.), 200., 100., box1_sprite);
+        let box2_sprite = SpriteComponent::new(assets.box2.clone(), ggez::graphics::Color::WHITE);
+        let box2 = entities::wall::Wall::new(glam::vec2(80., 200.), 100., 400., box2_sprite);
+        let walls = vec![box1, box2];
 
         GameState {
             rng,

@@ -44,24 +44,18 @@ impl Player {
     }
 
     #[inline]
-    pub fn set_colliding_components(&mut self, colliding_components: (bool, bool)) {
-        self.aabb.colliding_components = colliding_components;
+    pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
+        self.aabb.colliding_axis = colliding_axis;
     }
 
     pub fn update(&mut self, dt: f32) {
         entities::move_entity(
             &mut self.transform,
             &self.move_component,
-            self.aabb.colliding_components,
+            self.aabb.colliding_axis,
         );
         self.aabb.rect.move_to(self.transform.position);
         self.animation.update(dt);
-    }
-
-    pub fn get_rect_of_next_move(&self) -> ggez::graphics::Rect {
-        let new_pos =
-            self.transform.position + self.move_component.direction * self.move_component.speed;
-        ggez::graphics::Rect::new(new_pos.x, new_pos.y, self.aabb.rect.w, self.aabb.rect.h)
     }
 }
 

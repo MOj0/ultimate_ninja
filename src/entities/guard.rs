@@ -1,6 +1,7 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::constants;
 use crate::entities;
+use crate::entities::AABBCollisionComponent;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
@@ -12,6 +13,8 @@ pub struct Guard {
     pub animation: AnimationComponent,
     pub move_component: MoveComponent,
     pub look: LookComponent,
+    pub aabb: AABBCollisionComponent,
+
     pub tmp_counter: f32,
 }
 
@@ -33,8 +36,19 @@ impl Guard {
                 constants::GUARD_FOV,
                 constants::GUARD_VIEW_DISTANCE,
             ),
+            aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
+                position.x,
+                position.y,
+                constants::ENTITY_SIZE,
+                constants::ENTITY_SIZE,
+            )),
             tmp_counter: 0.,
         }
+    }
+
+    #[inline]
+    pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
+        self.aabb.colliding_axis = colliding_axis;
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -42,7 +56,14 @@ impl Guard {
             .set_direction_normalized(glam::vec2(self.tmp_counter.cos(), -self.tmp_counter.sin()));
         self.look.look_at = self.move_component.direction;
 
-        entities::move_entity(&mut self.transform, &self.move_component, (false, false)); // TODO: calculate collision instead of (false, false)
+        entities::move_entity(
+            &mut self.transform,
+            &self.move_component,
+            self.aabb.colliding_axis,
+        );
+
+        self.aabb.rect.move_to(self.transform.position);
+
         self.animation.update(dt);
 
         if self.move_component.direction.length_squared() == 0. {

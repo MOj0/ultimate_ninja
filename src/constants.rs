@@ -10,7 +10,7 @@ pub const SPRITE_SCALE: glam::Vec2 = glam::vec2(0.33, 0.33);
 
 pub const ENTITY_SIZE: f32 = 8.;
 pub const PLAYER_SPEED: f32 = 4.;
-pub const TARGET_SPEED: f32 = 0.1;
+pub const TARGET_SPEED: f32 = 0.2;
 pub const GUARD_SPEED: f32 = 0.2;
 pub const GUARD_FOV: f32 = PI / 6.;
 pub const GUARD_VIEW_DISTANCE: f32 = 200.;

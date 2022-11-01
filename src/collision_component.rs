@@ -1,13 +1,13 @@
 pub struct AABBCollisionComponent {
     pub rect: ggez::graphics::Rect,
-    pub colliding_components: (bool, bool),
+    pub colliding_axis: (bool, bool),
 }
 
 impl AABBCollisionComponent {
     pub fn new(rect: ggez::graphics::Rect) -> Self {
         Self {
             rect,
-            colliding_components: (false, false),
+            colliding_axis: (false, false),
         }
     }
 
@@ -17,7 +17,8 @@ impl AABBCollisionComponent {
     }
 
     /// Assume: self and other_rect are colliding
-    pub fn get_colliding_components(&self, entity_rect: &ggez::graphics::Rect) -> (bool, bool) {
+    /// Returns: (x_axis_colliding, y_axis_colliding)
+    pub fn get_colliding_axis(&self, entity_rect: &ggez::graphics::Rect) -> (bool, bool) {
         if entity_rect.right() <= self.rect.left() || entity_rect.left() >= self.rect.right() {
             return (true, false);
         }
