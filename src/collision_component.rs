@@ -16,16 +16,22 @@ impl AABBCollisionComponent {
         self.rect.overlaps(&other_rect)
     }
 
-    /// Assume: self and other_rect are colliding
+    /// Assume: self and next_move_of(entity_rect) are colliding
     /// Returns: (x_axis_colliding, y_axis_colliding)
     pub fn get_colliding_axis(&self, entity_rect: &ggez::graphics::Rect) -> (bool, bool) {
-        // TODO: Fix edge case
-        if entity_rect.right() <= self.rect.left() || entity_rect.left() >= self.rect.right() {
+        if self.rect.top() <= entity_rect.bottom()
+            && self.rect.bottom() >= entity_rect.top()
+            && (entity_rect.right() <= self.rect.left() || entity_rect.left() >= self.rect.right())
+        {
             return (true, false);
         }
-        if entity_rect.bottom() <= self.rect.top() || entity_rect.top() >= self.rect.bottom() {
+        if self.rect.right() >= entity_rect.left()
+            && self.rect.left() <= entity_rect.right()
+            && (entity_rect.bottom() <= self.rect.top() || entity_rect.top() >= self.rect.bottom())
+        {
             return (false, true);
         }
+
         (false, false)
     }
 }
