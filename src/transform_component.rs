@@ -1,12 +1,17 @@
 pub struct TransformComponent {
     pub position: glam::Vec2,
     pub size: f32,
+    pub angle: f32,
 }
 
 impl TransformComponent {
     #[inline]
     pub fn new(position: glam::Vec2, size: f32) -> Self {
-        Self { position, size }
+        Self {
+            position,
+            size,
+            angle: 0.,
+        }
     }
 
     #[inline]

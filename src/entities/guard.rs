@@ -53,6 +53,13 @@ impl Guard {
     }
 
     #[inline]
+    pub fn set_angle(&mut self, dir: glam::Vec2) {
+        if dir.length_squared() > 0. {
+            self.transform.angle = util::get_vec_angle(dir);
+        }
+    }
+
+    #[inline]
     pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
@@ -61,6 +68,7 @@ impl Guard {
         self.move_component
             .set_direction_normalized(glam::vec2(self.tmp_counter.cos(), -self.tmp_counter.sin()));
         self.look.look_at = self.move_component.direction;
+        self.set_angle(self.move_component.direction);
 
         entities::move_entity(
             &mut self.transform,

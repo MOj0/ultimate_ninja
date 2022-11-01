@@ -99,7 +99,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             &self.player.animation.get_curr_frame(),
             DrawParam::default()
                 .dest(self.player.transform.position)
-                .rotation(-util::get_vec_angle(self.player.move_component.direction)),
+                .rotation(-self.player.transform.angle),
         )?;
 
         sprite_component::render_sprite(
@@ -108,7 +108,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             &self.target.animation.get_curr_frame(),
             DrawParam::default()
                 .dest(self.target.transform.position)
-                .rotation(-util::get_vec_angle(self.target.move_component.direction)),
+                .rotation(-self.target.transform.angle),
         )?;
 
         self.guards
@@ -120,7 +120,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     &guard.animation.get_curr_frame(),
                     DrawParam::default()
                         .dest(guard.transform.position)
-                        .rotation(-util::get_vec_angle(guard.move_component.direction)),
+                        .rotation(-guard.transform.angle),
                 )
             })
             .count();

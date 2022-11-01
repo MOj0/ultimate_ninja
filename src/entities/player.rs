@@ -39,6 +39,13 @@ impl Player {
     }
 
     #[inline]
+    pub fn set_angle(&mut self, dir: glam::Vec2) {
+        if dir.length_squared() > 0. {
+            self.transform.angle = util::get_vec_angle(dir);
+        }
+    }
+
+    #[inline]
     pub fn set_x_dir(&mut self, x_dir: f32) {
         self.move_component.set_x_dir(x_dir);
     }
@@ -59,20 +66,22 @@ impl Player {
             &self.move_component,
             self.aabb.colliding_axis,
         );
+        self.set_angle(self.move_component.direction);
+
         self.aabb.rect.move_to(self.transform.position);
         self.animation.update(dt);
+
+        if self.move_component.direction.length_squared() == 0. {
+            self.animation.set_animation_state(AnimationState::Idle);
+        } else {
+            self.animation.set_animation_state(AnimationState::Active);
+        }
     }
 }
 
 pub fn system(game_state: &mut GameState, dt: f32) {
     let player = &mut game_state.player;
     player.update(dt);
-
-    if player.move_component.direction.length_squared() == 0. {
-        player.animation.set_animation_state(AnimationState::Idle);
-    } else {
-        player.animation.set_animation_state(AnimationState::Active);
-    }
 
     let target = &mut game_state.target;
     if util::check_collision(&player.transform, &target.transform) {

@@ -37,6 +37,13 @@ impl Target {
     }
 
     #[inline]
+    pub fn set_angle(&mut self, dir: glam::Vec2) {
+        if dir.length_squared() > 0. {
+            self.transform.angle = util::get_vec_angle(dir);
+        }
+    }
+
+    #[inline]
     pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
@@ -49,6 +56,7 @@ impl Target {
             &self.move_component,
             self.aabb.colliding_axis,
         );
+        self.set_angle(self.move_component.direction);
 
         self.aabb.rect.move_to(self.transform.position);
 
