@@ -78,7 +78,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
         self.target.update(dt);
 
-        entities::guard::system(self, dt);
+        entities::guard::system(ctx, _quad_ctx, self, dt);
 
         Ok(())
     }
@@ -135,6 +135,19 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     DrawParam::default()
                         .dest(guard.transform.position)
                         .rotation(-constants::PI / 2. - util::get_vec_angle(guard.look.look_at)),
+                )
+            })
+            .count();
+        self.guards
+            .iter()
+            .filter(|guard| guard.tmp_rect_to_player.is_some())
+            .map(|guard| {
+                sprite_component::render_mesh(
+                    ctx,
+                    quad_ctx,
+                    &guard.tmp_rect_to_player.as_ref().unwrap(),
+                    DrawParam::default(), // .dest(guard.transform.position)
+                                          // .rotation(-constants::PI / 2. - util::get_vec_angle(guard.look.look_at)),
                 )
             })
             .count();

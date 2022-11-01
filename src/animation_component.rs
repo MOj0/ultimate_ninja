@@ -19,6 +19,12 @@ impl AnimationComponent {
         }
     }
 
+    pub fn set_color(&mut self, color: ggez::graphics::Color) {
+        self.animation
+            .iter_mut()
+            .for_each(|sprite| sprite.set_color(color));
+    }
+
     pub fn set_animation_state(&mut self, state: AnimationState) {
         if state == AnimationState::Idle {
             self.index = 0;

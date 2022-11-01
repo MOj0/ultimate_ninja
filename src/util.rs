@@ -1,5 +1,6 @@
 use crate::animation_component::AnimationComponent;
 use crate::assets::Assets;
+use crate::collision_component::AABBCollisionComponent;
 use crate::constants;
 use crate::look_component::LookComponent;
 use crate::sprite_component::SpriteComponent;
@@ -55,6 +56,7 @@ pub fn check_spotted(
     look: &LookComponent,
     source: &TransformComponent,
     dest: &TransformComponent,
+    aabb_objects: &Vec<&AABBCollisionComponent>,
 ) -> bool {
     let vec_to_dest = dest.position - source.position;
     let len_to_dest_sq = vec_to_dest.length_squared();
@@ -65,6 +67,24 @@ pub fn check_spotted(
     }
     // Dest is out of view distance
     if len_to_dest_sq > look.view_distance.powi(2) {
+        return false;
+    }
+
+    // Check if there is an collision object between the source and destination
+    // Currently rect-rect collision is checked -> TODO: Improve with line-rect: https://www.jeffreythompson.org/collision-detection/line-rect.php
+    let rect_center = source.position + vec_to_dest / 2.;
+    let (rect_width, rect_height) = (
+        (dest.position.x - source.position.x).abs(),
+        (dest.position.y - source.position.y).abs(),
+    );
+    let mut rect_to_player =
+        ggez::graphics::Rect::new(rect_center.x, rect_center.y, rect_width, rect_height);
+    rect_to_player.translate(glam::vec2(-rect_width / 2., -rect_height / 2.));
+
+    if aabb_objects
+        .iter()
+        .any(|aabb| aabb.check_collision(&rect_to_player))
+    {
         return false;
     }
 

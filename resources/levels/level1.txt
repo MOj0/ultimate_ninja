@@ -1,8 +1,8 @@
 xxxxxxxxxxxxxxxxxxxx
 x------x-----------x
 x------x--------t--x
-x------xxxxxxxxxxx-x
-x---------g--------x
+x--g---xxxxxxxxxxx-x
+x-----------------x
 x------------------x
 x--------xxxxxx----x
 x--------x---------x

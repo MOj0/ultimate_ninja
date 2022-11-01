@@ -71,6 +71,12 @@ impl Player {
         self.aabb.rect.move_to(self.transform.position);
         self.animation.update(dt);
 
+        if self.is_detected {
+            self.animation.set_color(ggez::graphics::Color::BLUE);
+        } else {
+            self.animation.set_color(ggez::graphics::Color::BLACK);
+        }
+
         if self.move_component.direction.length_squared() == 0. {
             self.animation.set_animation_state(AnimationState::Idle);
         } else {

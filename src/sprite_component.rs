@@ -1,4 +1,3 @@
-use crate::constants;
 use ggez::miniquad;
 use ggez::{graphics, Context, GameResult};
 
