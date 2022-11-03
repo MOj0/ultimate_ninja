@@ -1,6 +1,5 @@
 use crate::animation_component::AnimationComponent;
 use crate::assets::Assets;
-use crate::collision_component::AABBCollisionComponent;
 use crate::constants;
 use crate::look_component::LookComponent;
 use crate::sprite_component::SpriteComponent;
@@ -56,7 +55,7 @@ pub fn check_spotted(
     look: &LookComponent,
     source: &TransformComponent,
     dest: &TransformComponent,
-    aabb_objects: &Vec<&AABBCollisionComponent>,
+    rect_objects: &Vec<&ggez::graphics::Rect>,
 ) -> bool {
     let vec_to_dest = dest.position - source.position;
     let len_to_dest_sq = vec_to_dest.length_squared();
@@ -71,20 +70,22 @@ pub fn check_spotted(
     }
 
     // Check if there is an collision object between the source and destination
-    // Currently rect-rect collision is checked -> TODO: Improve with line-rect: https://www.jeffreythompson.org/collision-detection/line-rect.php
-    let rect_center = source.position + vec_to_dest / 2.;
-    let (rect_width, rect_height) = (
-        (dest.position.x - source.position.x).abs(),
-        (dest.position.y - source.position.y).abs(),
+    let line_to_dest = (
+        source.position.x,
+        source.position.y,
+        dest.position.x,
+        dest.position.y,
     );
-    let mut rect_to_player =
-        ggez::graphics::Rect::new(rect_center.x, rect_center.y, rect_width, rect_height);
-    rect_to_player.translate(glam::vec2(-rect_width / 2., -rect_height / 2.));
-
-    if aabb_objects
-        .iter()
-        .any(|aabb| aabb.check_collision(&rect_to_player))
-    {
+    let line_of_sight_blocked = rect_objects.iter().any(|rect| {
+        line_rect_intersection(
+            line_to_dest.0,
+            line_to_dest.1,
+            line_to_dest.2,
+            line_to_dest.3,
+            rect,
+        )
+    });
+    if line_of_sight_blocked {
         return false;
     }
 
@@ -92,6 +93,77 @@ pub fn check_spotted(
     let dot = look.look_at.dot(vec_to_dest);
     let angle = (dot / (look.look_at.length() * len_to_dest_sq.sqrt())).acos();
     return angle <= look.fov;
+}
+
+pub fn line_line_intersection(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    x3: f32,
+    y3: f32,
+    x4: f32,
+    y4: f32,
+) -> bool {
+    // calculate the direction of the lines
+    let u_a = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3))
+        / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+    let u_b = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3))
+        / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+
+    // if u_a and u_b are between 0-1, lines are colliding
+    u_a >= 0. && u_a <= 1. && u_b >= 0. && u_b <= 1.
+}
+
+pub fn line_rect_intersection(
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    rect: &ggez::graphics::Rect,
+) -> bool {
+    let top_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.top(),
+        rect.right(),
+        rect.top(),
+    );
+    let right_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.right(),
+        rect.top(),
+        rect.right(),
+        rect.bottom(),
+    );
+    let bottom_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.bottom(),
+        rect.right(),
+        rect.bottom(),
+    );
+    let left_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.top(),
+        rect.left(),
+        rect.bottom(),
+    );
+
+    top_intersection || right_intersection || bottom_intersection || left_intersection
 }
 
 pub fn get_vec_angle(v: glam::Vec2) -> f32 {

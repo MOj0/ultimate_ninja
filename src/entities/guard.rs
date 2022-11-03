@@ -16,7 +16,6 @@ pub struct Guard {
     pub look: LookComponent,
     pub aabb: AABBCollisionComponent,
 
-    pub tmp_rect_to_player: Option<ggez::graphics::Mesh>,
     pub tmp_counter: f32,
 }
 
@@ -49,7 +48,6 @@ impl Guard {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
-            tmp_rect_to_player: None,
             tmp_counter: 0.,
         }
     }
@@ -92,13 +90,8 @@ impl Guard {
     }
 }
 
-pub fn system(
-    tmp_ctx: &mut ggez::Context,
-    tmp_quad_ctx: &mut ggez::miniquad::Context,
-    game_state: &mut GameState,
-    dt: f32,
-) {
-    if is_player_detected(tmp_ctx, tmp_quad_ctx, game_state) {
+pub fn system(game_state: &mut GameState, dt: f32) {
+    if is_player_detected(game_state) {
         game_state.player.is_detected = true;
     } else {
         game_state.player.is_detected = false;
@@ -110,43 +103,14 @@ pub fn system(
         .for_each(|guard| guard.update(dt));
 }
 
-fn is_player_detected(
-    tmp_ctx: &mut ggez::Context,
-    tmp_quad_ctx: &mut ggez::miniquad::Context,
-    game_state: &mut GameState,
-) -> bool {
+fn is_player_detected(game_state: &mut GameState) -> bool {
     let player_transform = &game_state.player.transform;
 
     let aabb_objects = game_state
         .walls
         .iter()
-        .map(|wall| &wall.aabb)
-        .collect::<Vec<&AABBCollisionComponent>>();
-
-    let dest = &game_state.player.transform;
-    game_state.guards.iter_mut().for_each(|source| {
-        let vec_to_dest = dest.position - source.transform.position;
-        let rect_center = source.transform.position + vec_to_dest / 2.;
-        let (rect_width, rect_height) = (
-            (dest.position.x - source.transform.position.x).abs(),
-            (dest.position.y - source.transform.position.y).abs(),
-        );
-
-        let mut rect_to_player =
-            ggez::graphics::Rect::new(rect_center.x, rect_center.y, rect_width, rect_height);
-        rect_to_player.translate(glam::vec2(-rect_width / 2., -rect_height / 2.));
-
-        let m = ggez::graphics::Mesh::new_rectangle(
-            tmp_ctx,
-            tmp_quad_ctx,
-            ggez::graphics::DrawMode::fill(),
-            rect_to_player,
-            ggez::graphics::Color::new(0.1, 0.2, 0.1, 0.2),
-        )
-        .unwrap();
-
-        source.tmp_rect_to_player = Some(m);
-    });
+        .map(|wall| &wall.aabb.rect)
+        .collect::<Vec<&ggez::graphics::Rect>>();
 
     game_state.guards.iter().any(|guard| {
         util::check_spotted(
