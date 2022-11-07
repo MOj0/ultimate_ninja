@@ -26,7 +26,7 @@ impl Wall {
         }
     }
 
-    pub fn get_colliding_axis(
+    pub fn get_colliding_vec_components(
         &self,
         transform: &TransformComponent,
         move_component: &MoveComponent,
@@ -42,42 +42,50 @@ impl Wall {
     }
 }
 
-fn get_colliding_axis_all(
+fn get_colliding_vec_components_all(
     walls: &Vec<Wall>,
     transform: &TransformComponent,
     move_component: &MoveComponent,
     aabb: &AABBCollisionComponent,
 ) -> (bool, bool) {
     walls.iter().fold((false, false), |init, wall| {
-        let collding_axis = wall.get_colliding_axis(transform, move_component, aabb);
-        (init.0 || collding_axis.0, init.1 || collding_axis.1)
+        let collding_vec_components =
+            wall.get_colliding_vec_components(transform, move_component, aabb);
+        (
+            init.0 || collding_vec_components.0,
+            init.1 || collding_vec_components.1,
+        )
     })
 }
 
-pub fn system(game_state: &mut GameState) {
-    let player_colliding_axis = get_colliding_axis_all(
+pub fn check_collision(game_state: &mut GameState) {
+    let player_colliding_vec_components = get_colliding_vec_components_all(
         &game_state.walls,
         &game_state.player.transform,
         &game_state.player.move_component,
         &game_state.player.aabb,
     );
-    game_state.player.set_colliding_axis(player_colliding_axis);
+    game_state
+        .player
+        .set_colliding_vec_components(player_colliding_vec_components);
 
-    let target_colliding_axis = get_colliding_axis_all(
+    let target_colliding_vec_components = get_colliding_vec_components_all(
         &game_state.walls,
         &game_state.target.transform,
         &game_state.target.move_component,
         &game_state.target.aabb,
     );
-    game_state.target.set_colliding_axis(target_colliding_axis);
+    game_state
+        .target
+        .set_colliding_vec_components(target_colliding_vec_components);
 
     game_state.guards.iter_mut().for_each(|guard| {
-        let guard_colliding_axis = get_colliding_axis_all(
+        let guard_colliding_axis = get_colliding_vec_components_all(
             &game_state.walls,
             &guard.transform,
             &guard.move_component,
             &guard.aabb,
         );
-        guard.set_colliding_axis(guard_colliding_axis);
+        guard.set_colliding_vec_components(guard_colliding_axis);
     });
 }

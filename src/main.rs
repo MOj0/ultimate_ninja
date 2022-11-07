@@ -72,13 +72,15 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
     ) -> Result<(), ggez::GameError> {
         let dt = ggez::timer::delta(ctx).as_secs_f32();
 
-        entities::wall::system(self);
+        entities::wall::check_collision(self);
 
         entities::player::system(self, dt);
 
         self.target.update(dt);
 
         entities::guard::system(self, dt);
+
+        look_component::system(self);
 
         Ok(())
     }
@@ -125,6 +127,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             })
             .count();
 
+        // Draw look components
         self.guards
             .iter()
             .map(|guard| {
@@ -136,6 +139,32 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                         .dest(guard.transform.position)
                         .rotation(-constants::PI / 2. - util::get_vec_angle(guard.look.look_at)),
                 )
+            })
+            .count();
+
+        // Draw look rays
+        self.guards
+            .iter()
+            .map(|guard| {
+                guard
+                    .look
+                    .ray_meshes
+                    .iter()
+                    .enumerate()
+                    .map(|(ray_idx, ray_mesh)| {
+                        sprite_component::render_mesh(
+                            ctx,
+                            quad_ctx,
+                            ray_mesh,
+                            DrawParam::default()
+                                .dest(guard.transform.position)
+                                .rotation(
+                                    -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
+                                )
+                                .color(guard.look.tmp_ray_colors[ray_idx]),
+                        )
+                    })
+                    .count();
             })
             .count();
 

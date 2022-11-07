@@ -44,7 +44,7 @@ impl Target {
     }
 
     #[inline]
-    pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
+    pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
 

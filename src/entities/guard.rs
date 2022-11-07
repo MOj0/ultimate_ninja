@@ -41,6 +41,7 @@ impl Guard {
                 glam::vec2(0., 1.),
                 constants::GUARD_FOV,
                 constants::GUARD_VIEW_DISTANCE,
+                6,
             ),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,
@@ -60,7 +61,7 @@ impl Guard {
     }
 
     #[inline]
-    pub fn set_colliding_axis(&mut self, colliding_axis: (bool, bool)) {
+    pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
 
