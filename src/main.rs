@@ -161,7 +161,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                                 .rotation(
                                     -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
                                 )
-                                .color(guard.look.tmp_ray_colors[ray_idx]),
+                                .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
                         )
                     })
                     .count();

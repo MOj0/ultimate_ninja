@@ -77,7 +77,7 @@ pub fn check_spotted(
         dest.position.y,
     );
     let line_of_sight_blocked = rect_objects.iter().any(|rect| {
-        line_rect_intersection(
+        line_rect_intersects(
             line_to_dest.0,
             line_to_dest.1,
             line_to_dest.2,
@@ -95,7 +95,7 @@ pub fn check_spotted(
     return angle <= look.fov;
 }
 
-pub fn line_line_intersection(
+pub fn line_line_intersects(
     x1: f32,
     y1: f32,
     x2: f32,
@@ -114,15 +114,44 @@ pub fn line_line_intersection(
     // if u_a and u_b are between 0-1, lines are colliding
     u_a >= 0. && u_a <= 1. && u_b >= 0. && u_b <= 1.
 }
+pub fn line_line_intersection(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    x3: f32,
+    y3: f32,
+    x4: f32,
+    y4: f32,
+) -> Option<glam::Vec2> {
+    //Line1
+    let a1 = y2 - y1;
+    let b1 = x1 - x2;
+    let c1 = a1 * x1 + b1 * y1;
 
-pub fn line_rect_intersection(
+    //Line2
+    let a2 = y4 - y3;
+    let b2 = x3 - x4;
+    let c2 = a2 * x3 + b2 * y3;
+
+    let det = a1 * b2 - a2 * b1;
+    if det.abs() > f32::EPSILON {
+        let x = (b2 * c1 - b1 * c2) / det;
+        let y = (a1 * c2 - a2 * c1) / det;
+        return Some(glam::vec2(x, y));
+    }
+
+    None
+}
+
+pub fn line_rect_intersects(
     x0: f32,
     y0: f32,
     x1: f32,
     y1: f32,
     rect: &ggez::graphics::Rect,
 ) -> bool {
-    let top_intersection = line_line_intersection(
+    let top_intersection = line_line_intersects(
         x0,
         y0,
         x1,
@@ -132,7 +161,7 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.top(),
     );
-    let right_intersection = line_line_intersection(
+    let right_intersection = line_line_intersects(
         x0,
         y0,
         x1,
@@ -142,7 +171,7 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.bottom(),
     );
-    let bottom_intersection = line_line_intersection(
+    let bottom_intersection = line_line_intersects(
         x0,
         y0,
         x1,
@@ -152,7 +181,7 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.bottom(),
     );
-    let left_intersection = line_line_intersection(
+    let left_intersection = line_line_intersects(
         x0,
         y0,
         x1,
@@ -164,6 +193,76 @@ pub fn line_rect_intersection(
     );
 
     top_intersection || right_intersection || bottom_intersection || left_intersection
+}
+
+pub fn line_rect_intersection(
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    rect: &ggez::graphics::Rect,
+) -> Option<glam::Vec2> {
+    if !line_rect_intersects(x0, y0, x1, y1, rect) {
+        return None;
+    }
+
+    let top_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.top(),
+        rect.right(),
+        rect.top(),
+    );
+    if top_intersection.is_some() {
+        return top_intersection;
+    }
+
+    let right_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.right(),
+        rect.top(),
+        rect.right(),
+        rect.bottom(),
+    );
+    if right_intersection.is_some() {
+        return right_intersection;
+    }
+
+    let bottom_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.bottom(),
+        rect.right(),
+        rect.bottom(),
+    );
+    if bottom_intersection.is_some() {
+        return bottom_intersection;
+    }
+
+    let left_intersection = line_line_intersection(
+        x0,
+        y0,
+        x1,
+        y1,
+        rect.left(),
+        rect.top(),
+        rect.left(),
+        rect.bottom(),
+    );
+    if left_intersection.is_some() {
+        return left_intersection;
+    }
+
+    None
 }
 
 pub fn get_vec_angle(v: glam::Vec2) -> f32 {

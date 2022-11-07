@@ -10,8 +10,10 @@ pub struct LookComponent {
     pub fov_mesh: ggez::graphics::Mesh,
     pub rays: Vec<glam::Vec2>,
     pub ray_meshes: Vec<ggez::graphics::Mesh>,
-    pub tmp_ray_colors: Vec<ggez::graphics::Color>,
+    pub ray_scales: Vec<f32>,
 }
+
+// TODO: Make make a composition of multiple meshes, one for each ray, and scale them with ray_scales
 
 impl LookComponent {
     pub fn new(
@@ -49,10 +51,7 @@ impl LookComponent {
             })
             .collect::<Vec<ggez::graphics::Mesh>>();
 
-        let ray_colors = rays
-            .iter()
-            .map(|_| ggez::graphics::Color::WHITE)
-            .collect::<Vec<ggez::graphics::Color>>();
+        let ray_scales = rays.iter().map(|_| 0.0).collect::<Vec<f32>>();
 
         Self {
             look_at,
@@ -61,7 +60,7 @@ impl LookComponent {
             fov_mesh,
             rays,
             ray_meshes,
-            tmp_ray_colors: ray_colors,
+            ray_scales,
         }
     }
 
@@ -136,21 +135,31 @@ impl LookComponent {
             })
             .collect();
 
-        // Reset colors
-        self.tmp_ray_colors
-            .iter_mut()
-            .for_each(|ray_color| *ray_color = ggez::graphics::Color::WHITE);
-
-        // Get indices of rays which are colliding
-        let colliding_rays_indices = lines.iter().enumerate().filter_map(|(i, line)| {
-            rect_objects
-                .iter()
-                .any(|rect| util::line_rect_intersection(line.0, line.1, line.2, line.3, rect))
-                .then_some(i)
-        });
-
-        // Set their colors to blue
-        colliding_rays_indices.for_each(|i| self.tmp_ray_colors[i] = ggez::graphics::Color::BLUE);
+        // Get and set the scale [0.0, 1.0] for each ray
+        self.ray_scales = lines
+            .iter()
+            .map(|line| {
+                rect_objects
+                    .iter()
+                    .filter_map(|rect| {
+                        util::line_rect_intersection(line.0, line.1, line.2, line.3, rect)
+                    })
+                    .min_by_key(|intersect_point| {
+                        ((line.0 - intersect_point.x).abs() + (line.1 - intersect_point.y).abs())
+                            as u32
+                    })
+                    .map_or_else(
+                        || 1.0,
+                        |min_intersection_point| {
+                            let scale = (glam::vec2(line.0, line.1) - min_intersection_point)
+                                .length()
+                                / (glam::vec2(line.0, line.1) - glam::vec2(line.2, line.3))
+                                    .length();
+                            scale.min(1.0)
+                        },
+                    )
+            })
+            .collect::<Vec<f32>>();
     }
 }
 
