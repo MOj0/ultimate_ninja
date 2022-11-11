@@ -28,13 +28,10 @@ impl Wall {
 
     pub fn get_colliding_vec_components(
         &self,
-        transform: &TransformComponent,
-        move_component: &MoveComponent,
         aabb: &AABBCollisionComponent,
+        rect_of_next_move: &ggez::graphics::Rect,
     ) -> (bool, bool) {
-        let rect_of_next_move = &entities::get_rect_of_next_move(transform, move_component, aabb);
-
-        if self.aabb.check_collision(rect_of_next_move) {
+        if self.aabb.check_collision(&aabb.rect) || self.aabb.check_collision(rect_of_next_move) {
             return self.aabb.get_colliding_axis(&aabb.rect);
         }
 
@@ -48,9 +45,10 @@ fn get_colliding_vec_components_all(
     move_component: &MoveComponent,
     aabb: &AABBCollisionComponent,
 ) -> (bool, bool) {
+    let rect_of_next_move = &entities::get_rect_of_next_move(transform, move_component, aabb);
+
     walls.iter().fold((false, false), |init, wall| {
-        let collding_vec_components =
-            wall.get_colliding_vec_components(transform, move_component, aabb);
+        let collding_vec_components = wall.get_colliding_vec_components(aabb, rect_of_next_move);
         (
             init.0 || collding_vec_components.0,
             init.1 || collding_vec_components.1,

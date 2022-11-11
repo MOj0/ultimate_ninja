@@ -9,7 +9,7 @@ pub struct LookComponent {
     pub view_distance: f32,
     pub fov_mesh: ggez::graphics::Mesh,
     pub rays: Vec<glam::Vec2>,
-    pub ray_meshes: Vec<ggez::graphics::Mesh>,
+    pub ray_lines: Vec<ggez::graphics::Mesh>,
     pub ray_scales: Vec<f32>,
 }
 
@@ -59,7 +59,7 @@ impl LookComponent {
             view_distance,
             fov_mesh,
             rays,
-            ray_meshes,
+            ray_lines: ray_meshes,
             ray_scales,
         }
     }

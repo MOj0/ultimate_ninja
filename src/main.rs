@@ -148,14 +148,14 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             .map(|guard| {
                 guard
                     .look
-                    .ray_meshes
+                    .ray_lines
                     .iter()
                     .enumerate()
-                    .map(|(ray_idx, ray_mesh)| {
+                    .map(|(ray_idx, ray_line)| {
                         sprite_component::render_mesh(
                             ctx,
                             quad_ctx,
-                            ray_mesh,
+                            ray_line,
                             DrawParam::default()
                                 .dest(guard.transform.position)
                                 .rotation(

@@ -216,10 +216,6 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.top(),
     );
-    if top_intersection.is_some() {
-        return top_intersection;
-    }
-
     let right_intersection = line_line_intersection(
         x0,
         y0,
@@ -230,9 +226,6 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.bottom(),
     );
-    if right_intersection.is_some() {
-        return right_intersection;
-    }
 
     let bottom_intersection = line_line_intersection(
         x0,
@@ -244,9 +237,6 @@ pub fn line_rect_intersection(
         rect.right(),
         rect.bottom(),
     );
-    if bottom_intersection.is_some() {
-        return bottom_intersection;
-    }
 
     let left_intersection = line_line_intersection(
         x0,
@@ -258,11 +248,18 @@ pub fn line_rect_intersection(
         rect.left(),
         rect.bottom(),
     );
-    if left_intersection.is_some() {
-        return left_intersection;
-    }
 
-    None
+    vec![
+        top_intersection,
+        left_intersection,
+        right_intersection,
+        bottom_intersection,
+    ]
+    .into_iter()
+    .filter_map(|intersection| intersection)
+    .min_by_key(|intersect_point| {
+        ((x0 - intersect_point.x).abs() + (y0 - intersect_point.y).abs()) as u32
+    })
 }
 
 pub fn get_vec_angle(v: glam::Vec2) -> f32 {
