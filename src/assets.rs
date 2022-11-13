@@ -14,6 +14,8 @@ pub struct Assets {
     pub wall: graphics::Image,
     pub box1: graphics::Image,
     pub box2: graphics::Image,
+
+    pub teleport: graphics::Image,
 }
 
 impl Assets {
@@ -32,6 +34,8 @@ impl Assets {
         let box1 = graphics::Image::new(ctx, quad_ctx, "/textures/box1.png").unwrap();
         let box2 = graphics::Image::new(ctx, quad_ctx, "/textures/box2.png").unwrap();
 
+        let teleport = graphics::Image::new(ctx, quad_ctx, "/textures/oni.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -46,6 +50,8 @@ impl Assets {
             wall,
             box1,
             box2,
+
+            teleport,
         }
     }
 }

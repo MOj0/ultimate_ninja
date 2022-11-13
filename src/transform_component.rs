@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct TransformComponent {
     pub position: glam::Vec2,
     pub size: f32,

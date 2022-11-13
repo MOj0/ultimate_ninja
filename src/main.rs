@@ -8,6 +8,7 @@ mod look_component;
 mod move_component;
 mod sprite_component;
 mod stamina_component;
+mod teleport_component;
 mod transform_component;
 mod util;
 
@@ -30,6 +31,8 @@ pub struct GameState {
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
     walls: Vec<entities::wall::Wall>,
+    double_press_timer: Option<f32>,
+    debug_draw: bool,
 }
 
 impl GameState {
@@ -59,6 +62,8 @@ impl GameState {
             target,
             guards: vec![],
             walls: vec![],
+            double_press_timer: None,
+            debug_draw: false,
         };
 
         level::load_level(ctx, quad_ctx, &mut game_state, &assets, 0);
@@ -97,6 +102,15 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         graphics::clear(ctx, quad_ctx, gray);
 
         use graphics::DrawParam;
+
+        if self.player.teleport.location.is_some() {
+            sprite_component::render_sprite(
+                ctx,
+                quad_ctx,
+                &self.player.teleport.sprite,
+                DrawParam::default().dest(self.player.teleport.location.as_ref().unwrap().position),
+            )?;
+        }
 
         sprite_component::render_sprite(
             ctx,
@@ -156,32 +170,34 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             })
             .count();
 
-        // TODO: Only draw this in 'debug' mode
-        // // Draw look rays
-        // self.guards
-        //     .iter()
-        //     .map(|guard| {
-        //         guard
-        //             .look
-        //             .ray_lines
-        //             .iter()
-        //             .enumerate()
-        //             .map(|(ray_idx, ray_line)| {
-        //                 sprite_component::render_mesh(
-        //                     ctx,
-        //                     quad_ctx,
-        //                     ray_line,
-        //                     DrawParam::default()
-        //                         .dest(guard.transform.position)
-        //                         .rotation(
-        //                             -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
-        //                         )
-        //                         .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
-        //                 )
-        //             })
-        //             .count();
-        //     })
-        //     .count();
+        if self.debug_draw {
+            // Draw look rays
+            self.guards
+                .iter()
+                .map(|guard| {
+                    guard
+                        .look
+                        .ray_lines
+                        .iter()
+                        .enumerate()
+                        .map(|(ray_idx, ray_line)| {
+                            sprite_component::render_mesh(
+                                ctx,
+                                quad_ctx,
+                                ray_line,
+                                DrawParam::default()
+                                    .dest(guard.transform.position)
+                                    .rotation(
+                                        -constants::PI / 2.
+                                            - util::get_vec_angle(guard.look.look_at),
+                                    )
+                                    .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
+                            )
+                        })
+                        .count();
+                })
+                .count();
+        }
 
         self.walls
             .iter()
@@ -205,44 +221,59 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         )
         .unwrap();
 
-        // TODO: only draw this in 'debug' mode
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-            DrawParam::from((glam::vec2(4., 32.),)),
-        )?;
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text(
-                format!("is_player_detected: {}", self.player.is_detected),
-                24.,
-            ),
-            DrawParam::from((glam::vec2(4., 56.),)),
-        )?;
+        if self.debug_draw {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
+                DrawParam::from((glam::vec2(4., 32.),)),
+            )?;
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(
+                    format!("is_player_detected: {}", self.player.is_detected),
+                    24.,
+                ),
+                DrawParam::from((glam::vec2(4., 56.),)),
+            )?;
+        }
 
         Ok(())
     }
 
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         _quad_ctx: &mut miniquad::Context,
         keycode: KeyCode,
         _keymods: KeyMods,
         repeat: bool,
     ) {
+        if keycode != KeyCode::F {
+            self.double_press_timer = None;
+        }
+
         match keycode {
             KeyCode::W => self.player.set_y_dir(-1.),
             KeyCode::S => self.player.set_y_dir(1.),
             KeyCode::A => self.player.set_x_dir(-1.),
             KeyCode::D => self.player.set_x_dir(1.),
             KeyCode::F => {
+                let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
+
                 if repeat {
                     self.player.set_stealth_intent(true);
+                } else if curr_t - self.double_press_timer.unwrap_or(-1.)
+                    < constants::DOUBLE_PRESS_TIME
+                {
+                    self.player.teleport_action();
+                    self.double_press_timer = None;
+                } else {
+                    self.double_press_timer = Some(curr_t);
                 }
             }
+            KeyCode::B => self.debug_draw = !self.debug_draw,
             _ => (),
         }
     }

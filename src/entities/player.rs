@@ -2,10 +2,12 @@ use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::collision_component::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
 use crate::stamina_component::StaminaComponent;
+use crate::teleport_component::TeleportComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
 use crate::GameState;
+use crate::SpriteComponent;
 
 use crate::constants;
 use crate::entities;
@@ -16,6 +18,7 @@ pub struct Player {
     pub move_component: MoveComponent,
     pub aabb: AABBCollisionComponent,
     pub stamina: StaminaComponent,
+    pub teleport: TeleportComponent,
 
     pub is_detected: bool,
     pub stealth_intent: bool,
@@ -44,6 +47,12 @@ impl Player {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
+
+            teleport: TeleportComponent::new(SpriteComponent::new(
+                assets.teleport.clone(),
+                ggez::graphics::Color::WHITE,
+            )),
+
             is_detected: false,
             stamina: StaminaComponent::new(
                 ctx,
@@ -84,6 +93,23 @@ impl Player {
     #[inline]
     pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
+    }
+
+    #[inline]
+    pub fn teleport_action(&mut self) {
+        if self.teleport.location.is_none()
+            && self.stamina.stamina > constants::TELEPORT_COST_INTIAL
+        {
+            self.teleport.set_location(self.transform.clone());
+
+            self.stamina.stamina -= constants::TELEPORT_COST_INTIAL;
+        } else if self.stamina.stamina > constants::TELEPORT_COST {
+            self.transform
+                .set(self.teleport.location.as_ref().unwrap().position);
+
+            self.teleport.location = None;
+            self.stamina.stamina -= constants::TELEPORT_COST;
+        }
     }
 
     pub fn update(&mut self, dt: f32) {
