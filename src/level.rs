@@ -37,7 +37,15 @@ pub fn load_level(
         );
 
         match char {
-            'p' => game_state.player = Player::new(position, &assets, ggez::graphics::Color::BLACK),
+            'p' => {
+                game_state.player = Player::new(
+                    ctx,
+                    quad_ctx,
+                    position,
+                    &assets,
+                    ggez::graphics::Color::BLACK,
+                )
+            }
             't' => game_state.target = Target::new(position, &assets, ggez::graphics::Color::GREEN),
             'g' => game_state.guards.push(Guard::new(
                 ctx,

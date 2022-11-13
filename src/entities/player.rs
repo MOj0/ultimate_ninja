@@ -1,6 +1,7 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::collision_component::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
+use crate::stamina_component::StaminaComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
@@ -14,15 +15,21 @@ pub struct Player {
     pub animation: AnimationComponent,
     pub move_component: MoveComponent,
     pub aabb: AABBCollisionComponent,
+    pub stamina: StaminaComponent,
 
     pub is_detected: bool,
-
-    pub stamina: f32,
+    pub stealth_intent: bool,
     pub is_stealth: bool,
 }
 
 impl Player {
-    pub fn new(position: glam::Vec2, assets: &Assets, color: ggez::graphics::Color) -> Self {
+    pub fn new(
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        position: glam::Vec2,
+        assets: &Assets,
+        color: ggez::graphics::Color,
+    ) -> Self {
         Self {
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             animation: util::build_walk_animation(
@@ -38,14 +45,23 @@ impl Player {
                 constants::ENTITY_SIZE,
             )),
             is_detected: false,
-            stamina: 100.,
+            stamina: StaminaComponent::new(
+                ctx,
+                quad_ctx,
+                100.,
+                1.,
+                ggez::graphics::Rect::new(10., 10., 200., 20.),
+                ggez::graphics::Color::GREEN,
+            ),
+            stealth_intent: false,
             is_stealth: false,
         }
     }
 
     #[inline]
-    pub fn set_stealth(&mut self, stealth: bool) {
-        self.is_stealth = stealth;
+    pub fn set_stealth_intent(&mut self, stealth_intent: bool) {
+        self.stealth_intent = stealth_intent;
+        self.is_stealth = stealth_intent && self.stamina.stamina > 0.;
     }
 
     #[inline]
@@ -71,6 +87,8 @@ impl Player {
     }
 
     pub fn update(&mut self, dt: f32) {
+        self.stamina.update(self.stealth_intent);
+
         match self.is_stealth {
             false => self.animation.set_color(ggez::graphics::Color::BLACK),
             true => {

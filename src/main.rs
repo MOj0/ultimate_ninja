@@ -7,6 +7,7 @@ mod level;
 mod look_component;
 mod move_component;
 mod sprite_component;
+mod stamina_component;
 mod transform_component;
 mod util;
 
@@ -39,6 +40,8 @@ impl GameState {
         let assets = Assets::load(ctx, quad_ctx);
 
         let player = entities::player::Player::new(
+            ctx,
+            quad_ctx,
             glam::Vec2::default(),
             &assets,
             ggez::graphics::Color::BLACK,
@@ -194,11 +197,20 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             })
             .count();
 
+        sprite_component::render_mesh(
+            ctx,
+            quad_ctx,
+            &self.player.stamina.stamina_mesh,
+            DrawParam::default().scale(glam::vec2(self.player.stamina.get_percentage(), 1.)),
+        )
+        .unwrap();
+
+        // TODO: only draw this in 'debug' mode
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-            DrawParam::from((glam::vec2(4., 8.),)),
+            DrawParam::from((glam::vec2(4., 32.),)),
         )?;
         graphics::draw(
             ctx,
@@ -207,7 +219,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 format!("is_player_detected: {}", self.player.is_detected),
                 24.,
             ),
-            DrawParam::from((glam::vec2(4., 32.),)),
+            DrawParam::from((glam::vec2(4., 56.),)),
         )?;
 
         Ok(())
@@ -228,7 +240,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             KeyCode::D => self.player.set_x_dir(1.),
             KeyCode::F => {
                 if repeat {
-                    self.player.set_stealth(true);
+                    self.player.set_stealth_intent(true);
                 }
             }
             _ => (),
@@ -251,7 +263,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         } else if keycode == KeyCode::D && self.player.move_component.direction.x > 0. {
             self.player.set_x_dir(0.);
         } else if keycode == KeyCode::F {
-            self.player.set_stealth(false);
+            self.player.set_stealth_intent(false);
         }
     }
 }
