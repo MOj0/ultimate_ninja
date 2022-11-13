@@ -105,6 +105,11 @@ pub fn system(game_state: &mut GameState, dt: f32) {
 }
 
 fn is_player_detected(game_state: &mut GameState) -> bool {
+    // Player cannot be detected if he is stealth
+    if game_state.player.is_stealth {
+        return false;
+    }
+
     let player_transform = &game_state.player.transform;
 
     let aabb_objects = game_state

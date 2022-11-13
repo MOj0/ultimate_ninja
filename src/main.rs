@@ -219,13 +219,18 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         _quad_ctx: &mut miniquad::Context,
         keycode: KeyCode,
         _keymods: KeyMods,
-        _repeat: bool,
+        repeat: bool,
     ) {
         match keycode {
             KeyCode::W => self.player.set_y_dir(-1.),
             KeyCode::S => self.player.set_y_dir(1.),
             KeyCode::A => self.player.set_x_dir(-1.),
             KeyCode::D => self.player.set_x_dir(1.),
+            KeyCode::F => {
+                if repeat {
+                    self.player.set_stealth(true);
+                }
+            }
             _ => (),
         }
     }
@@ -245,6 +250,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             self.player.set_x_dir(0.);
         } else if keycode == KeyCode::D && self.player.move_component.direction.x > 0. {
             self.player.set_x_dir(0.);
+        } else if keycode == KeyCode::F {
+            self.player.set_stealth(false);
         }
     }
 }

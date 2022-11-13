@@ -16,6 +16,9 @@ pub struct Player {
     pub aabb: AABBCollisionComponent,
 
     pub is_detected: bool,
+
+    pub stamina: f32,
+    pub is_stealth: bool,
 }
 
 impl Player {
@@ -34,8 +37,15 @@ impl Player {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
-            is_detected: true,
+            is_detected: false,
+            stamina: 100.,
+            is_stealth: false,
         }
+    }
+
+    #[inline]
+    pub fn set_stealth(&mut self, stealth: bool) {
+        self.is_stealth = stealth;
     }
 
     #[inline]
@@ -61,6 +71,17 @@ impl Player {
     }
 
     pub fn update(&mut self, dt: f32) {
+        match self.is_stealth {
+            false => self.animation.set_color(ggez::graphics::Color::BLACK),
+            true => {
+                self.animation
+                    .set_color(ggez::graphics::Color::new(0., 0., 0., 0.25));
+
+                // NOTE: If player is stealth, retrun
+                return;
+            }
+        }
+
         entities::move_entity(
             &mut self.transform,
             &self.move_component,
@@ -69,13 +90,8 @@ impl Player {
         self.set_angle(self.move_component.direction);
 
         self.aabb.rect.move_to(self.transform.position);
-        self.animation.update(dt);
 
-        if self.is_detected {
-            self.animation.set_color(ggez::graphics::Color::BLUE);
-        } else {
-            self.animation.set_color(ggez::graphics::Color::BLACK);
-        }
+        self.animation.update(dt);
 
         if self.move_component.direction.length_squared() == 0. {
             self.animation.set_animation_state(AnimationState::Idle);
