@@ -17,3 +17,5 @@ pub const TARGET_SPEED: f32 = 2.;
 pub const GUARD_SPEED: f32 = 2.2;
 pub const GUARD_FOV: f32 = PI / 6.;
 pub const GUARD_VIEW_DISTANCE: f32 = 200.;
+
+pub const ANIMATION_SPEED: f32 = 0.1575;

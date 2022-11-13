@@ -127,46 +127,58 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             })
             .count();
 
-        // Draw look components
-        self.guards
-            .iter()
-            .map(|guard| {
-                sprite_component::render_mesh(
-                    ctx,
-                    quad_ctx,
-                    &guard.look.fov_mesh,
-                    DrawParam::default()
-                        .dest(guard.transform.position)
-                        .rotation(-constants::PI / 2. - util::get_vec_angle(guard.look.look_at)),
-                )
-            })
-            .count();
-
-        // Draw look rays
+        // Draw look mesh compositions
         self.guards
             .iter()
             .map(|guard| {
                 guard
                     .look
-                    .ray_lines
+                    .fov_mesh_composition
                     .iter()
-                    .enumerate()
-                    .map(|(ray_idx, ray_line)| {
+                    .zip(&guard.look.ray_scales)
+                    .flat_map(|(fov_section, scale)| {
                         sprite_component::render_mesh(
                             ctx,
                             quad_ctx,
-                            ray_line,
+                            fov_section,
                             DrawParam::default()
                                 .dest(guard.transform.position)
                                 .rotation(
                                     -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
                                 )
-                                .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
+                                .scale(glam::Vec2::splat(*scale)),
                         )
                     })
-                    .count();
+                    .count()
             })
             .count();
+
+        // TODO: Only draw this in 'debug' mode
+        // // Draw look rays
+        // self.guards
+        //     .iter()
+        //     .map(|guard| {
+        //         guard
+        //             .look
+        //             .ray_lines
+        //             .iter()
+        //             .enumerate()
+        //             .map(|(ray_idx, ray_line)| {
+        //                 sprite_component::render_mesh(
+        //                     ctx,
+        //                     quad_ctx,
+        //                     ray_line,
+        //                     DrawParam::default()
+        //                         .dest(guard.transform.position)
+        //                         .rotation(
+        //                             -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
+        //                         )
+        //                         .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
+        //                 )
+        //             })
+        //             .count();
+        //     })
+        //     .count();
 
         self.walls
             .iter()

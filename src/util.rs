@@ -298,6 +298,7 @@ pub fn build_walk_animation(
     AnimationComponent::new(animation, duration)
 }
 
+#[inline]
 pub fn compute_animation_duration(speed: f32) -> f32 {
-    speed.recip() * 0.1575
+    speed.recip() * constants::ANIMATION_SPEED
 }
