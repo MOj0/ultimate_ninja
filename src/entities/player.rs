@@ -48,11 +48,10 @@ impl Player {
                 constants::ENTITY_SIZE,
             )),
 
-            teleport: TeleportComponent::new(SpriteComponent::new(
-                assets.teleport.clone(),
-                ggez::graphics::Color::WHITE,
-            )),
-
+            teleport: TeleportComponent::new(
+                SpriteComponent::new(assets.teleport.clone(), ggez::graphics::Color::WHITE)
+                    .scale(constants::SPRITE_SCALE),
+            ),
             is_detected: false,
             stamina: StaminaComponent::new(
                 ctx,
@@ -153,4 +152,9 @@ pub fn system(game_state: &mut GameState, dt: f32) {
     if util::check_collision(&player.transform, &target.transform) {
         target.is_dead = true;
     }
+
+    let exit = &mut game_state.exit;
+
+    exit.player_exited =
+        target.is_dead && util::check_collision(&player.transform, &exit.transform);
 }

@@ -1,4 +1,5 @@
 use crate::constants;
+use crate::entities::exit::Exit;
 use crate::entities::guard::Guard;
 use crate::entities::player::Player;
 use crate::entities::target::Target;
@@ -8,7 +9,7 @@ use crate::SpriteComponent;
 use crate::Assets;
 use crate::GameState;
 
-const ALL_LEVELS: &[&str] = &["resources/levels/level1.txt"]; // TODO: Do not put 'resources' here?
+const ALL_LEVELS: &[&str] = &["resources/levels/level0.txt"]; // TODO: Do not put 'resources' here?
 
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 
@@ -72,6 +73,12 @@ pub fn load_level(
                 constants::GRID_SIZE as f32,
                 SpriteComponent::new(assets.box2.clone(), ggez::graphics::Color::WHITE),
             )),
+            'e' => {
+                game_state.exit = Exit::new(
+                    position,
+                    SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
+                )
+            }
             '\n' => {
                 x = -1;
                 y += 1;

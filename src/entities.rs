@@ -1,3 +1,4 @@
+pub mod exit;
 pub mod guard;
 pub mod player;
 pub mod target;

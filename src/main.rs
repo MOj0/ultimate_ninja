@@ -31,6 +31,7 @@ pub struct GameState {
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
     walls: Vec<entities::wall::Wall>,
+    exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
     debug_draw: bool,
 }
@@ -56,12 +57,18 @@ impl GameState {
             ggez::graphics::Color::GREEN,
         );
 
+        let exit = entities::exit::Exit::new(
+            glam::Vec2::default(),
+            SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
+        );
+
         let mut game_state = GameState {
             rng,
             player,
             target,
             guards: vec![],
             walls: vec![],
+            exit,
             double_press_timer: None,
             debug_draw: false,
         };
@@ -89,6 +96,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         entities::guard::system(self, dt);
 
         look_component::system(self);
+
+        entities::exit::system(self, dt);
 
         Ok(())
     }
@@ -221,6 +230,17 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         )
         .unwrap();
 
+        if self.target.is_dead {
+            sprite_component::render_sprite(
+                ctx,
+                quad_ctx,
+                &self.exit.sprite,
+                DrawParam::default()
+                    .dest(self.exit.transform.position)
+                    .rotation(-self.exit.scale_rotation_counter),
+            )?;
+        }
+
         if self.debug_draw {
             graphics::draw(
                 ctx,
@@ -236,6 +256,12 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     24.,
                 ),
                 DrawParam::from((glam::vec2(4., 56.),)),
+            )?;
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("player_exited: {}", self.exit.player_exited), 24.),
+                DrawParam::from((glam::vec2(4., 80.),)),
             )?;
         }
 

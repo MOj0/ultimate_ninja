@@ -21,8 +21,14 @@ impl SpriteComponent {
         self
     }
 
+    #[inline]
     pub fn set_color(&mut self, color: graphics::Color) {
         self.color = color;
+    }
+
+    #[inline]
+    pub fn set_scale(&mut self, scale: f32) {
+        self.scale = glam::Vec2::splat(scale);
     }
 }
 

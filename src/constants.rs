@@ -2,7 +2,7 @@
 // pub const HEIGHT: u32 = 768;
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
-pub const GRID_SIZE: u32 = 40; // size: 40 -> 20x15 grid (at 800x600)
+pub const GRID_SIZE: u32 = 40; // size 40 produces 20x15 grid (at 800x600)
 
 pub const PI: f32 = std::f32::consts::PI;
 
