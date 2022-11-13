@@ -31,7 +31,7 @@ impl Wall {
         aabb: &AABBCollisionComponent,
         rect_of_next_move: &ggez::graphics::Rect,
     ) -> (bool, bool) {
-        if self.aabb.check_collision(&aabb.rect) || self.aabb.check_collision(rect_of_next_move) {
+        if self.aabb.check_collision(rect_of_next_move) {
             return self.aabb.get_colliding_axis(&aabb.rect);
         }
 

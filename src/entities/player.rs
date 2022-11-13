@@ -114,6 +114,10 @@ impl Player {
     pub fn update(&mut self, dt: f32) {
         self.stamina.update(self.stealth_intent);
 
+        if self.stamina.stamina <= 0. {
+            self.is_stealth = false;
+        }
+
         match self.is_stealth {
             false => self.animation.set_color(ggez::graphics::Color::BLACK),
             true => {

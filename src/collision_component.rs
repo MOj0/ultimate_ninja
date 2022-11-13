@@ -32,6 +32,9 @@ impl AABBCollisionComponent {
             return (false, true);
         }
 
-        (false, false)
+        self.rect
+            .overlaps(entity_rect)
+            .then(|| (true, true))
+            .unwrap_or((false, false))
     }
 }
