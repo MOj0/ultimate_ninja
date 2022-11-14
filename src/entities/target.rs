@@ -6,10 +6,12 @@ use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
+use crate::SpriteComponent;
 
 pub struct Target {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
+    pub sprite_dead: SpriteComponent,
     pub move_component: MoveComponent,
     pub aabb: AABBCollisionComponent,
 
@@ -25,6 +27,8 @@ impl Target {
                 util::compute_animation_duration(constants::TARGET_SPEED),
                 color,
             ),
+            sprite_dead: SpriteComponent::new(assets.dead.clone(), ggez::graphics::Color::GREEN)
+                .scale(constants::SPRITE_SCALE),
             move_component: MoveComponent::new(constants::TARGET_SPEED),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,
@@ -48,7 +52,20 @@ impl Target {
         self.aabb.colliding_axis = colliding_axis;
     }
 
+    /// Since target can be dead, it has an additional sprite for dead state
+    pub fn get_curr_animation_frame(&self) -> &SpriteComponent {
+        if self.is_dead {
+            return &self.sprite_dead;
+        }
+
+        self.animation.get_curr_frame()
+    }
+
     pub fn update(&mut self, dt: f32) {
+        if self.is_dead {
+            return;
+        }
+
         self.move_component
             .set_direction_normalized(glam::vec2(-1., 0.));
         entities::move_entity(

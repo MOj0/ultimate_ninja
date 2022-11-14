@@ -11,6 +11,8 @@ pub struct Assets {
     pub walk_r3: graphics::Image,
     pub walk_r4: graphics::Image,
 
+    pub dead: graphics::Image,
+
     pub wall: graphics::Image,
     pub box1: graphics::Image,
     pub box2: graphics::Image,
@@ -31,6 +33,8 @@ impl Assets {
         let walk_r3 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r3.png").unwrap();
         let walk_r4 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r4.png").unwrap();
 
+        let dead = graphics::Image::new(ctx, quad_ctx, "/textures/dead.png").unwrap();
+
         let wall = graphics::Image::new(ctx, quad_ctx, "/textures/wall.png").unwrap();
         let box1 = graphics::Image::new(ctx, quad_ctx, "/textures/box1.png").unwrap();
         let box2 = graphics::Image::new(ctx, quad_ctx, "/textures/box2.png").unwrap();
@@ -48,6 +52,8 @@ impl Assets {
             walk_r2,
             walk_r3,
             walk_r4,
+
+            dead,
 
             wall,
             box1,

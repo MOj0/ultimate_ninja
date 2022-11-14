@@ -25,6 +25,8 @@ use ggez::{Context, GameResult};
 
 use oorandom::Rand32;
 
+// TODO: Implement loading of next level(s)
+
 pub struct GameState {
     rng: Rand32,
     player: entities::player::Player,
@@ -133,7 +135,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         sprite_component::render_sprite(
             ctx,
             quad_ctx,
-            &self.target.animation.get_curr_frame(),
+            &self.target.get_curr_animation_frame(),
             DrawParam::default()
                 .dest(self.target.transform.position)
                 .rotation(-self.target.transform.angle),
