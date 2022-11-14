@@ -23,24 +23,24 @@ pub struct Assets {
 
 impl Assets {
     pub fn load(ctx: &mut Context, quad_ctx: &mut ggez::miniquad::GraphicsContext) -> Self {
-        let stand = graphics::Image::new(ctx, quad_ctx, "/textures/stand.png").unwrap();
-        let walk_l1 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l1.png").unwrap();
-        let walk_l2 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l2.png").unwrap();
-        let walk_l3 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l3.png").unwrap();
-        let walk_l4 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_l4.png").unwrap();
-        let walk_r1 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r1.png").unwrap();
-        let walk_r2 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r2.png").unwrap();
-        let walk_r3 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r3.png").unwrap();
-        let walk_r4 = graphics::Image::new(ctx, quad_ctx, "/textures/walk_r4.png").unwrap();
+        let stand = graphics::Image::new(ctx, quad_ctx, "textures/stand.png").unwrap();
+        let walk_l1 = graphics::Image::new(ctx, quad_ctx, "textures/walk_l1.png").unwrap();
+        let walk_l2 = graphics::Image::new(ctx, quad_ctx, "textures/walk_l2.png").unwrap();
+        let walk_l3 = graphics::Image::new(ctx, quad_ctx, "textures/walk_l3.png").unwrap();
+        let walk_l4 = graphics::Image::new(ctx, quad_ctx, "textures/walk_l4.png").unwrap();
+        let walk_r1 = graphics::Image::new(ctx, quad_ctx, "textures/walk_r1.png").unwrap();
+        let walk_r2 = graphics::Image::new(ctx, quad_ctx, "textures/walk_r2.png").unwrap();
+        let walk_r3 = graphics::Image::new(ctx, quad_ctx, "textures/walk_r3.png").unwrap();
+        let walk_r4 = graphics::Image::new(ctx, quad_ctx, "textures/walk_r4.png").unwrap();
 
-        let dead = graphics::Image::new(ctx, quad_ctx, "/textures/dead.png").unwrap();
+        let dead = graphics::Image::new(ctx, quad_ctx, "textures/dead.png").unwrap();
 
-        let wall = graphics::Image::new(ctx, quad_ctx, "/textures/wall.png").unwrap();
-        let box1 = graphics::Image::new(ctx, quad_ctx, "/textures/box1.png").unwrap();
-        let box2 = graphics::Image::new(ctx, quad_ctx, "/textures/box2.png").unwrap();
+        let wall = graphics::Image::new(ctx, quad_ctx, "textures/wall.png").unwrap();
+        let box1 = graphics::Image::new(ctx, quad_ctx, "textures/box1.png").unwrap();
+        let box2 = graphics::Image::new(ctx, quad_ctx, "textures/box2.png").unwrap();
 
-        let teleport = graphics::Image::new(ctx, quad_ctx, "/textures/oni.png").unwrap();
-        let exit = graphics::Image::new(ctx, quad_ctx, "/textures/exit.png").unwrap();
+        let teleport = graphics::Image::new(ctx, quad_ctx, "textures/oni.png").unwrap();
+        let exit = graphics::Image::new(ctx, quad_ctx, "textures/exit.png").unwrap();
 
         Assets {
             stand,

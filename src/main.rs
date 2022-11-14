@@ -25,16 +25,16 @@ use ggez::{Context, GameResult};
 
 use oorandom::Rand32;
 
-// TODO: Implement loading of next level(s)
-
 pub struct GameState {
     rng: Rand32,
+    assets: assets::Assets,
     player: entities::player::Player,
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
     walls: Vec<entities::wall::Wall>,
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
+    level_idx: usize,
     debug_draw: bool,
 }
 
@@ -64,20 +64,37 @@ impl GameState {
             SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
         );
 
+        let level_idx = 0;
+
         let mut game_state = GameState {
             rng,
+            assets,
             player,
             target,
             guards: vec![],
             walls: vec![],
             exit,
             double_press_timer: None,
+            level_idx,
             debug_draw: false,
         };
 
-        level::load_level(ctx, quad_ctx, &mut game_state, &assets, 0);
+        level::load_level(ctx, quad_ctx, &mut game_state, level_idx);
 
         game_state
+    }
+
+    pub fn reset(&mut self) {
+        self.player.is_detected = false;
+        self.player.is_stealth = false;
+        self.player.stealth_intent = false;
+
+        self.target.is_dead = false;
+
+        self.exit.player_exited = false;
+
+        self.guards.clear();
+        self.walls.clear();
     }
 }
 
@@ -85,7 +102,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
     fn update(
         &mut self,
         ctx: &mut Context,
-        _quad_ctx: &mut miniquad::Context,
+        quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
         let dt = ggez::timer::delta(ctx).as_secs_f32();
 
@@ -100,6 +117,11 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         look_component::system(self);
 
         entities::exit::system(self, dt);
+
+        if self.exit.player_exited {
+            self.level_idx += 1;
+            level::load_level(ctx, quad_ctx, self, self.level_idx);
+        }
 
         Ok(())
     }

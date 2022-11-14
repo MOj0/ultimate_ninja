@@ -5,11 +5,15 @@ use crate::entities::player::Player;
 use crate::entities::target::Target;
 use crate::entities::wall::Wall;
 use crate::SpriteComponent;
+use std::io::Read;
 
-use crate::Assets;
 use crate::GameState;
 
-const ALL_LEVELS: &[&str] = &["resources/levels/level0.txt"]; // TODO: Do not put 'resources' here?
+const ALL_LEVELS: &[&str] = &[
+    "levels/level0.txt",
+    "levels/level1.txt",
+    "levels/level_end.txt",
+];
 
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 
@@ -17,7 +21,6 @@ pub fn load_level(
     ctx: &mut ggez::Context,
     quad_ctx: &mut ggez::miniquad::GraphicsContext,
     game_state: &mut GameState,
-    assets: &Assets,
     level_index: usize,
 ) {
     assert!(
@@ -27,8 +30,14 @@ pub fn load_level(
         LEVEL_COUNT
     );
 
+    game_state.reset();
+
+    let assets = &game_state.assets;
+
     let level_filename = ALL_LEVELS[level_index];
-    let level = std::fs::read_to_string(level_filename).expect("could not open file");
+    let mut file = ggez::filesystem::open(ctx, level_filename).expect("could not open level file");
+    let mut level = String::new();
+    file.read_to_string(&mut level).unwrap();
 
     let (mut x, mut y): (i32, i32) = (0, 0);
     for char in level.chars() {

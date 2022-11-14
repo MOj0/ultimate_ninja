@@ -152,6 +152,10 @@ pub fn system(game_state: &mut GameState, dt: f32) {
     let player = &mut game_state.player;
     player.update(dt);
 
+    if player.is_stealth {
+        return;
+    }
+
     let target = &mut game_state.target;
     if util::check_collision(&player.transform, &target.transform) {
         target.is_dead = true;
