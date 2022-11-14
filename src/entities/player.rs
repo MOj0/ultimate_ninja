@@ -7,6 +7,7 @@ use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
 use crate::GameState;
+use crate::SoundCollection;
 use crate::SpriteComponent;
 
 use crate::constants;
@@ -23,6 +24,7 @@ pub struct Player {
     pub is_detected: bool,
     pub stealth_intent: bool,
     pub is_stealth: bool,
+    pub was_stealth_prev: bool,
 }
 
 impl Player {
@@ -63,6 +65,7 @@ impl Player {
             ),
             stealth_intent: false,
             is_stealth: false,
+            was_stealth_prev: false,
         }
     }
 
@@ -95,19 +98,26 @@ impl Player {
     }
 
     #[inline]
-    pub fn teleport_action(&mut self) {
+    pub fn teleport_action(
+        &mut self,
+        ctx: &mut ggez::Context,
+        sound_collection: &mut SoundCollection,
+    ) {
         if self.teleport.location.is_none()
             && self.stamina.stamina > constants::TELEPORT_COST_INTIAL
         {
             self.teleport.set_location(self.transform.clone());
-
             self.stamina.stamina -= constants::TELEPORT_COST_INTIAL;
+
+            sound_collection.play(ctx, 2).unwrap();
         } else if self.stamina.stamina > constants::TELEPORT_COST {
             self.transform
                 .set(self.teleport.location.as_ref().unwrap().position);
 
             self.teleport.location = None;
             self.stamina.stamina -= constants::TELEPORT_COST;
+
+            sound_collection.play(ctx, 3).unwrap();
         }
     }
 
@@ -118,16 +128,14 @@ impl Player {
             self.is_stealth = false;
         }
 
-        match self.is_stealth {
-            false => self.animation.set_color(ggez::graphics::Color::BLACK),
-            true => {
-                self.animation
-                    .set_color(ggez::graphics::Color::new(0., 0., 0., 0.25));
+        if self.is_stealth {
+            self.animation
+                .set_color(ggez::graphics::Color::new(0., 0., 0., 0.25));
 
-                // NOTE: If player is stealth, retrun
-                return;
-            }
+            return;
         }
+
+        self.animation.set_color(ggez::graphics::Color::BLACK);
 
         entities::move_entity(
             &mut self.transform,
@@ -148,21 +156,43 @@ impl Player {
     }
 }
 
-pub fn system(game_state: &mut GameState, dt: f32) {
+pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
     let player = &mut game_state.player;
     player.update(dt);
+
+    let sound_collection = &mut game_state.sound_collection;
+    handle_stealth_sound(ctx, player, sound_collection);
 
     if player.is_stealth {
         return;
     }
 
     let target = &mut game_state.target;
-    if util::check_collision(&player.transform, &target.transform) {
+    if !target.is_dead && util::check_collision(&player.transform, &target.transform) {
         target.is_dead = true;
+        sound_collection.play(ctx, 5).unwrap();
     }
 
     let exit = &mut game_state.exit;
 
     exit.player_exited =
         target.is_dead && util::check_collision(&player.transform, &exit.transform);
+    if exit.player_exited {
+        sound_collection.play(ctx, 7).unwrap();
+    }
+}
+
+fn handle_stealth_sound(
+    ctx: &mut ggez::Context,
+    player: &mut Player,
+    sound_collection: &mut SoundCollection,
+) {
+    if player.is_stealth && !player.was_stealth_prev {
+        sound_collection.play(ctx, 0).unwrap();
+        player.was_stealth_prev = true;
+    }
+    if !player.is_stealth && player.was_stealth_prev {
+        sound_collection.play(ctx, 1).unwrap();
+        player.was_stealth_prev = false;
+    }
 }

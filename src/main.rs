@@ -6,6 +6,7 @@ mod entities;
 mod level;
 mod look_component;
 mod move_component;
+mod sound_collection;
 mod sprite_component;
 mod stamina_component;
 mod teleport_component;
@@ -13,6 +14,7 @@ mod transform_component;
 mod util;
 
 use crate::assets::Assets;
+use crate::sound_collection::SoundCollection;
 use crate::sprite_component::SpriteComponent;
 
 extern crate good_web_game as ggez;
@@ -20,8 +22,7 @@ extern crate good_web_game as ggez;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::input::MouseButton;
 use ggez::miniquad;
-use ggez::{audio, graphics};
-use ggez::{Context, GameResult};
+use ggez::{audio, graphics, Context, GameResult};
 
 use oorandom::Rand32;
 
@@ -34,6 +35,7 @@ pub struct GameState {
     walls: Vec<entities::wall::Wall>,
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
+    sound_collection: SoundCollection,
     level_idx: usize,
     debug_draw: bool,
 }
@@ -64,6 +66,25 @@ impl GameState {
             SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
         );
 
+        let mut sounds = [
+            audio::Source::new(ctx, "sounds/stealth.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/unstealth.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/teleport_initial.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/teleport.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/player_dead.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/target_killed.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/dead_target_detected.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/level_exit.ogg").unwrap(),
+        ];
+        sounds
+            .iter_mut()
+            .for_each(|sound| sound.set_volume(ctx, 0.5).unwrap());
+
+        let sound_collection = SoundCollection {
+            sounds,
+            is_on: true,
+        };
+
         let level_idx = 0;
 
         let mut game_state = GameState {
@@ -75,6 +96,7 @@ impl GameState {
             walls: vec![],
             exit,
             double_press_timer: None,
+            sound_collection,
             level_idx,
             debug_draw: false,
         };
@@ -108,11 +130,11 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
         entities::wall::check_collision(self);
 
-        entities::player::system(self, dt);
+        entities::player::system(ctx, self, dt);
 
         self.target.update(dt);
 
-        entities::guard::system(self, dt);
+        entities::guard::system(ctx, self, dt);
 
         look_component::system(self);
 
@@ -317,7 +339,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 } else if curr_t - self.double_press_timer.unwrap_or(-1.)
                     < constants::DOUBLE_PRESS_TIME
                 {
-                    self.player.teleport_action();
+                    self.player.teleport_action(ctx, &mut self.sound_collection);
                     self.double_press_timer = None;
                 } else {
                     self.double_press_timer = Some(curr_t);

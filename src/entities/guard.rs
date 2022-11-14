@@ -91,12 +91,15 @@ impl Guard {
     }
 }
 
-pub fn system(game_state: &mut GameState, dt: f32) {
+pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
     if is_player_detected(game_state) {
         game_state.player.is_detected = true;
+        game_state.sound_collection.play(ctx, 4).unwrap();
     } else {
         game_state.player.is_detected = false;
     }
+
+    // TODO: Detect potentially dead target
 
     game_state
         .guards
