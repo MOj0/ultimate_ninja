@@ -83,13 +83,19 @@ impl Player {
     }
 
     #[inline]
+    pub fn set_dir(&mut self, dir: glam::Vec2) {
+        self.move_component.set_x_dir(dir.x);
+        self.move_component.set_y_dir(dir.y);
+    }
+
+    #[inline]
     pub fn set_x_dir(&mut self, x_dir: f32) {
-        self.move_component.set_x_dir(x_dir);
+        self.move_component.set_x_dir_normalized(x_dir);
     }
 
     #[inline]
     pub fn set_y_dir(&mut self, y_dir: f32) {
-        self.move_component.set_y_dir(y_dir);
+        self.move_component.set_y_dir_normalized(y_dir);
     }
 
     #[inline]

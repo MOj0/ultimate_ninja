@@ -5,6 +5,7 @@ mod constants;
 mod entities;
 mod level;
 mod look_component;
+mod mouse_input_handler;
 mod move_component;
 mod sound_collection;
 mod sprite_component;
@@ -14,6 +15,7 @@ mod transform_component;
 mod util;
 
 use crate::assets::Assets;
+use crate::mouse_input_handler::MouseInputHandler;
 use crate::sound_collection::SoundCollection;
 use crate::sprite_component::SpriteComponent;
 
@@ -36,6 +38,7 @@ pub struct GameState {
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
     sound_collection: SoundCollection,
+    mouse_input_handler: MouseInputHandler,
     level_idx: usize,
     debug_draw: bool,
 }
@@ -85,6 +88,15 @@ impl GameState {
             is_on: true,
         };
 
+        let mouse_input_handler = MouseInputHandler::new(
+            ctx,
+            quad_ctx,
+            glam::vec2(
+                (constants::WIDTH - 100) as f32,
+                (constants::HEIGHT - 100) as f32,
+            ),
+        );
+
         let level_idx = 0;
 
         let mut game_state = GameState {
@@ -97,6 +109,7 @@ impl GameState {
             exit,
             double_press_timer: None,
             sound_collection,
+            mouse_input_handler,
             level_idx,
             debug_draw: false,
         };
@@ -276,6 +289,14 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         )
         .unwrap();
 
+        sprite_component::render_mesh(
+            ctx,
+            quad_ctx,
+            &self.mouse_input_handler.circle_mesh,
+            DrawParam::default(),
+        )
+        .unwrap();
+
         if self.target.is_dead {
             sprite_component::render_sprite(
                 ctx,
@@ -345,6 +366,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                     self.double_press_timer = Some(curr_t);
                 }
             }
+            KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::B => self.debug_draw = !self.debug_draw,
             _ => (),
         }
@@ -368,6 +390,50 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         } else if keycode == KeyCode::F {
             self.player.set_stealth_intent(false);
         }
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _quad_ctx: &mut miniquad::GraphicsContext,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        match button {
+            MouseButton::Left => self.mouse_input_handler.set_pressed(true),
+            _ => (),
+        }
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _quad_ctx: &mut miniquad::Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        match button {
+            MouseButton::Left => self.mouse_input_handler.set_pressed(false),
+            _ => (),
+        }
+    }
+
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        _quad_ctx: &mut miniquad::Context,
+        x: f32,
+        y: f32,
+        _dx: f32,
+        _dy: f32,
+    ) {
+        let dir = self
+            .mouse_input_handler
+            .get_move_direction(glam::vec2(x, y));
+
+        self.player.set_dir(dir.unwrap_or_default());
     }
 }
 
