@@ -21,6 +21,7 @@ pub const GUARD_VIEW_DISTANCE: f32 = 200.;
 pub const ANIMATION_SPEED: f32 = 0.1575;
 
 pub const DOUBLE_PRESS_TIME: f32 = 0.5; // sec
+pub const HOLD_THRESHOLD_TIME: f32 = 0.4; // sec
 
 pub const TELEPORT_COST_INTIAL: f32 = 25.;
 pub const TELEPORT_COST: f32 = 50.;

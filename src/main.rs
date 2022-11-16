@@ -141,6 +141,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
     ) -> Result<(), ggez::GameError> {
         let dt = ggez::timer::delta(ctx).as_secs_f32();
 
+        mouse_input_handler::system(self, ggez::timer::time_since_start(ctx).as_secs_f32());
+
         entities::wall::check_collision(self);
 
         entities::player::system(ctx, self, dt);
@@ -394,35 +396,52 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
     fn mouse_button_down_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         _quad_ctx: &mut miniquad::GraphicsContext,
         button: MouseButton,
         _x: f32,
         _y: f32,
     ) {
         match button {
-            MouseButton::Left => self.mouse_input_handler.set_pressed(true),
+            MouseButton::Left => {
+                let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
+
+                // NOTE: If is_pressed is set to true, there is no PlayerAction to handle
+                self.mouse_input_handler.handle_pressed(true, curr_t);
+            }
             _ => (),
         }
     }
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         _quad_ctx: &mut miniquad::Context,
         button: MouseButton,
         _x: f32,
         _y: f32,
     ) {
         match button {
-            MouseButton::Left => self.mouse_input_handler.set_pressed(false),
+            MouseButton::Left => {
+                let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
+
+                match self.mouse_input_handler.handle_pressed(false, curr_t) {
+                    Some(mouse_input_handler::PlayerAblity::Teleport) => {
+                        self.player.teleport_action(ctx, &mut self.sound_collection)
+                    }
+                    Some(mouse_input_handler::PlayerAblity::Stealth(is_stealth)) => {
+                        self.player.set_stealth_intent(is_stealth)
+                    }
+                    None => (),
+                }
+            }
             _ => (),
         }
     }
 
     fn mouse_motion_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         _quad_ctx: &mut miniquad::Context,
         x: f32,
         y: f32,
