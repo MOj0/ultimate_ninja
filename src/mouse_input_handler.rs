@@ -6,6 +6,7 @@ pub struct MouseInputHandler {
     pub is_pressed: bool,
     pub circle_mesh: ggez::graphics::Mesh,
     pressed_time: Option<f32>,
+    hold_time: Option<f32>,
 }
 
 pub enum PlayerAblity {
@@ -35,6 +36,7 @@ impl MouseInputHandler {
             is_pressed: false,
             circle_mesh,
             pressed_time: None,
+            hold_time: None,
         }
     }
 
@@ -42,9 +44,9 @@ impl MouseInputHandler {
         let mut player_ablity: Option<PlayerAblity> = None;
 
         if self.is_pressed && !is_pressed {
-            if curr_time - self.pressed_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME {
+            if curr_time - self.hold_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME {
                 player_ablity = Some(PlayerAblity::Stealth(false));
-                self.pressed_time = None;
+                self.hold_time = None;
             } else if curr_time - self.pressed_time.unwrap_or(-1.) < constants::DOUBLE_PRESS_TIME {
                 player_ablity = Some(PlayerAblity::Teleport);
                 self.pressed_time = None;
@@ -53,14 +55,17 @@ impl MouseInputHandler {
             }
         }
 
+        if is_pressed {
+            self.hold_time = Some(curr_time);
+        }
+
         self.is_pressed = is_pressed;
         return player_ablity;
     }
 
-    // TODO: There are still some bugs with stealth...
-    pub fn get_player_action(&self, curr_time: f32) -> Option<PlayerAblity> {
+    pub fn get_player_action(&mut self, curr_time: f32) -> Option<PlayerAblity> {
         if self.is_pressed
-            && curr_time - self.pressed_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME
+            && curr_time - self.hold_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME
         {
             return Some(PlayerAblity::Stealth(true));
         }
@@ -74,6 +79,7 @@ impl MouseInputHandler {
         }
 
         self.pressed_time = None;
+        self.hold_time = None;
 
         let diff = mouse_position - self.center;
         let diff_normalized = diff.normalize_or_zero();

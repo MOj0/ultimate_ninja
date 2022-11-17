@@ -453,6 +453,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             .get_move_direction(glam::vec2(x, y));
 
         self.player.set_dir(dir.unwrap_or_default());
+
+        self.player.set_stealth_intent(false);
     }
 }
 
