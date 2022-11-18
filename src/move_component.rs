@@ -6,7 +6,7 @@ pub struct MoveComponent {
 impl MoveComponent {
     pub fn new(speed: f32) -> Self {
         Self {
-            direction: glam::Vec2::default(),
+            direction: glam::Vec2::ZERO,
             speed,
         }
     }

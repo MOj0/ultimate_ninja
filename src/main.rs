@@ -53,19 +53,16 @@ impl GameState {
         let player = entities::player::Player::new(
             ctx,
             quad_ctx,
-            glam::Vec2::default(),
+            glam::Vec2::ZERO,
             &assets,
             ggez::graphics::Color::BLACK,
         );
 
-        let target = entities::target::Target::new(
-            glam::Vec2::default(),
-            &assets,
-            ggez::graphics::Color::GREEN,
-        );
+        let target =
+            entities::target::Target::new(glam::Vec2::ZERO, &assets, ggez::graphics::Color::GREEN);
 
         let exit = entities::exit::Exit::new(
-            glam::Vec2::default(),
+            glam::Vec2::ZERO,
             SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
         );
 
@@ -435,11 +432,14 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
                 match self.mouse_input_handler.handle_pressed(false, curr_t) {
-                    Some(mouse_input_handler::PlayerAblity::Teleport) => {
+                    Some(mouse_input_handler::PlayerAction::Teleport) => {
                         self.player.teleport_action(ctx, &mut self.sound_collection)
                     }
-                    Some(mouse_input_handler::PlayerAblity::Stealth(is_stealth)) => {
+                    Some(mouse_input_handler::PlayerAction::Stealth(is_stealth)) => {
                         self.player.set_stealth_intent(is_stealth)
+                    }
+                    Some(mouse_input_handler::PlayerAction::StopMoving) => {
+                        self.player.set_dir(glam::Vec2::ZERO)
                     }
                     None => (),
                 }
@@ -450,7 +450,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
     fn mouse_motion_event(
         &mut self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         _quad_ctx: &mut miniquad::Context,
         x: f32,
         y: f32,

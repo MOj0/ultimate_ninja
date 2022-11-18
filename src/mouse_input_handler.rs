@@ -12,9 +12,10 @@ pub struct MouseInputHandler {
     hold_time: Option<f32>,
 }
 
-pub enum PlayerAblity {
+pub enum PlayerAction {
     Teleport,
     Stealth(bool),
+    StopMoving,
 }
 
 impl MouseInputHandler {
@@ -51,29 +52,30 @@ impl MouseInputHandler {
             is_pressed: false,
             touch_area,
             direction_circle,
-            direction_offset: glam::Vec2::default(),
+            direction_offset: glam::Vec2::ZERO,
             draw_scale,
             pressed_time: None,
             hold_time: None,
         }
     }
 
-    pub fn handle_pressed(&mut self, is_pressed: bool, curr_time: f32) -> Option<PlayerAblity> {
-        let mut player_ablity: Option<PlayerAblity> = None;
+    pub fn handle_pressed(&mut self, is_pressed: bool, curr_time: f32) -> Option<PlayerAction> {
+        let mut player_action: Option<PlayerAction> = None;
 
         // Touch is released
         if self.is_pressed && !is_pressed {
             if curr_time - self.hold_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME {
-                player_ablity = Some(PlayerAblity::Stealth(false));
+                player_action = Some(PlayerAction::Stealth(false));
                 self.hold_time = None;
             } else if curr_time - self.pressed_time.unwrap_or(-1.) < constants::DOUBLE_PRESS_TIME {
-                player_ablity = Some(PlayerAblity::Teleport);
+                player_action = Some(PlayerAction::Teleport);
                 self.pressed_time = None;
             } else {
+                player_action = Some(PlayerAction::StopMoving);
                 self.pressed_time = Some(curr_time);
             }
 
-            self.direction_offset = glam::Vec2::default();
+            self.direction_offset = glam::Vec2::ZERO;
         }
 
         if is_pressed {
@@ -81,14 +83,14 @@ impl MouseInputHandler {
         }
 
         self.is_pressed = is_pressed;
-        return player_ablity;
+        return player_action;
     }
 
-    pub fn get_player_action(&mut self, curr_time: f32) -> Option<PlayerAblity> {
+    pub fn get_player_action(&mut self, curr_time: f32) -> Option<PlayerAction> {
         if self.is_pressed
             && curr_time - self.hold_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME
         {
-            return Some(PlayerAblity::Stealth(true));
+            return Some(PlayerAction::Stealth(true));
         }
 
         None
@@ -115,7 +117,7 @@ impl MouseInputHandler {
 }
 
 pub fn system(game_state: &mut GameState, curr_time: f32) {
-    if let Some(PlayerAblity::Stealth(is_stealth)) =
+    if let Some(PlayerAction::Stealth(is_stealth)) =
         game_state.mouse_input_handler.get_player_action(curr_time)
     {
         game_state.player.set_stealth_intent(is_stealth);
