@@ -461,7 +461,9 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             .mouse_input_handler
             .get_move_direction(glam::vec2(x, y));
 
-        self.player.set_dir(dir.unwrap_or_default());
+        if dir.is_some() {
+            self.player.set_dir(dir.unwrap());
+        }
 
         self.player.set_stealth_intent(false);
     }
