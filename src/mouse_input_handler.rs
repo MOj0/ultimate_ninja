@@ -4,7 +4,10 @@ use crate::GameState;
 pub struct MouseInputHandler {
     pub center: glam::Vec2,
     pub is_pressed: bool,
-    pub circle_mesh: ggez::graphics::Mesh,
+    pub touch_area: ggez::graphics::Mesh,
+    pub direction_circle: ggez::graphics::Mesh,
+    pub direction_offset: glam::Vec2,
+    pub draw_scale: f32,
     pressed_time: Option<f32>,
     hold_time: Option<f32>,
 }
@@ -19,13 +22,25 @@ impl MouseInputHandler {
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         center: glam::Vec2,
+        draw_scale: f32,
     ) -> Self {
-        let circle_mesh = ggez::graphics::Mesh::new_circle(
+        let touch_area = ggez::graphics::Mesh::new_circle(
             ctx,
             quad_ctx,
             ggez::graphics::DrawMode::fill(),
             center,
-            20.,
+            draw_scale,
+            0.1,
+            ggez::graphics::Color::new(0., 0., 0., 0.65),
+        )
+        .unwrap();
+
+        let direction_circle = ggez::graphics::Mesh::new_circle(
+            ctx,
+            quad_ctx,
+            ggez::graphics::DrawMode::fill(),
+            center,
+            10.,
             0.1,
             ggez::graphics::Color::BLUE,
         )
@@ -34,7 +49,10 @@ impl MouseInputHandler {
         Self {
             center,
             is_pressed: false,
-            circle_mesh,
+            touch_area,
+            direction_circle,
+            direction_offset: glam::Vec2::default(),
+            draw_scale,
             pressed_time: None,
             hold_time: None,
         }
@@ -43,6 +61,7 @@ impl MouseInputHandler {
     pub fn handle_pressed(&mut self, is_pressed: bool, curr_time: f32) -> Option<PlayerAblity> {
         let mut player_ablity: Option<PlayerAblity> = None;
 
+        // Touch is released
         if self.is_pressed && !is_pressed {
             if curr_time - self.hold_time.unwrap_or(curr_time) > constants::HOLD_THRESHOLD_TIME {
                 player_ablity = Some(PlayerAblity::Stealth(false));
@@ -53,6 +72,8 @@ impl MouseInputHandler {
             } else {
                 self.pressed_time = Some(curr_time);
             }
+
+            self.direction_offset = glam::Vec2::default();
         }
 
         if is_pressed {
@@ -82,11 +103,14 @@ impl MouseInputHandler {
         self.hold_time = None;
 
         let diff = mouse_position - self.center;
+        let diff_len = diff.length();
         let diff_normalized = diff.normalize_or_zero();
 
-        (diff.length_squared() < 1500.)
-            .then_some(diff_normalized / 2.)
-            .or_else(|| Some(diff_normalized))
+        self.direction_offset = diff_normalized * self.draw_scale.min(diff_len);
+
+        (diff_len > self.draw_scale)
+            .then_some(diff_normalized)
+            .or(Some(diff_normalized * diff_len / self.draw_scale))
     }
 }
 

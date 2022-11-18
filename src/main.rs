@@ -92,9 +92,10 @@ impl GameState {
             ctx,
             quad_ctx,
             glam::vec2(
-                (constants::WIDTH - 100) as f32,
-                (constants::HEIGHT - 100) as f32,
+                (constants::WIDTH - 125) as f32,
+                (constants::HEIGHT - 125) as f32,
             ),
+            80.,
         );
 
         let level_idx = 0;
@@ -294,8 +295,16 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         sprite_component::render_mesh(
             ctx,
             quad_ctx,
-            &self.mouse_input_handler.circle_mesh,
+            &self.mouse_input_handler.touch_area,
             DrawParam::default(),
+        )
+        .unwrap();
+
+        sprite_component::render_mesh(
+            ctx,
+            quad_ctx,
+            &self.mouse_input_handler.direction_circle,
+            DrawParam::default().offset(-self.mouse_input_handler.direction_offset),
         )
         .unwrap();
 
