@@ -111,7 +111,7 @@ impl MouseInputHandler {
         self.direction_offset = diff_normalized * self.draw_scale.min(diff_len);
 
         (diff_len > self.draw_scale)
-            .then_some(diff_normalized)
+            .then(|| diff_normalized)
             .or(Some(diff_normalized * diff_len / self.draw_scale))
     }
 }
