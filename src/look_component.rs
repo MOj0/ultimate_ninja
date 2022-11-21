@@ -14,7 +14,25 @@ pub struct LookComponent {
 }
 
 impl LookComponent {
-    pub fn new(
+    pub fn new(look_at: glam::Vec2, fov: f32, view_distance: f32, n_rays: u32) -> Self {
+        let rays = Self::make_rays(look_at, fov, view_distance, n_rays);
+        let fov_mesh_composition = vec![];
+        let ray_lines = vec![];
+
+        let ray_scales = rays.iter().map(|_| 1.0).collect::<Vec<f32>>();
+
+        Self {
+            look_at,
+            fov,
+            view_distance,
+            fov_mesh_composition,
+            rays,
+            ray_lines,
+            ray_scales,
+        }
+    }
+
+    pub fn new_with_mesh(
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         look_at: glam::Vec2,
@@ -186,4 +204,9 @@ pub fn system(game_state: &mut GameState) {
     for (transform, look) in transform_look_components {
         look.update(transform, &aabb_objects);
     }
+
+    game_state
+        .target
+        .look
+        .update(&game_state.target.transform, &aabb_objects);
 }

@@ -1,6 +1,7 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::constants;
 use crate::entities;
+use crate::entities::wall::Wall;
 use crate::entities::AABBCollisionComponent;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
@@ -37,7 +38,7 @@ impl Guard {
                 color,
             ),
             move_component: MoveComponent::new(constants::GUARD_SPEED),
-            look: LookComponent::new(
+            look: LookComponent::new_with_mesh(
                 ctx,
                 quad_ctx,
                 glam::vec2(0., 1.),
@@ -62,6 +63,11 @@ impl Guard {
         if dir.length_squared() > 0. {
             self.transform.angle = util::get_vec_angle(dir);
         }
+    }
+
+    #[inline]
+    pub fn set_speed(&mut self, speed: f32) {
+        self.move_component.speed = speed;
     }
 
     #[inline]
@@ -137,14 +143,31 @@ impl Guard {
 }
 
 pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
-    if is_player_detected(game_state) {
+    if is_transform_detected(
+        &game_state.walls,
+        &game_state.guards,
+        &game_state.player.transform,
+        game_state.player.is_stealth,
+    ) {
         game_state.player.is_detected = true;
         game_state.sound_collection.play(ctx, 4).unwrap();
     } else {
         game_state.player.is_detected = false;
     }
 
-    // TODO: Detect potentially dead target
+    if game_state.target.is_dead
+        && is_transform_detected(
+            &game_state.walls,
+            &game_state.guards,
+            &game_state.target.transform,
+            false,
+        )
+    {
+        game_state
+            .guards
+            .iter_mut()
+            .for_each(|guard| guard.set_speed(constants::GUARD_SPEED * 1.5));
+    }
 
     game_state
         .guards
@@ -152,26 +175,23 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
         .for_each(|guard| guard.update(dt));
 }
 
-fn is_player_detected(game_state: &mut GameState) -> bool {
-    // Player cannot be detected if he is stealth
-    if game_state.player.is_stealth {
+fn is_transform_detected(
+    walls: &Vec<Wall>,
+    guards: &Vec<Guard>,
+    transform: &TransformComponent,
+    is_stealth: bool,
+) -> bool {
+    // If transform is stealth, it cannot be detected
+    if is_stealth {
         return false;
     }
 
-    let player_transform = &game_state.player.transform;
-
-    let aabb_objects = game_state
-        .walls
+    let aabb_objects = walls
         .iter()
         .map(|wall| &wall.aabb.rect)
         .collect::<Vec<&ggez::graphics::Rect>>();
 
-    game_state.guards.iter().any(|guard| {
-        util::check_spotted(
-            &guard.look,
-            &guard.transform,
-            &player_transform,
-            &aabb_objects,
-        )
-    })
+    guards
+        .iter()
+        .any(|guard| util::check_spotted(&guard.look, &guard.transform, transform, &aabb_objects))
 }
