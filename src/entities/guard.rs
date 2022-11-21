@@ -16,7 +16,9 @@ pub struct Guard {
     pub look: LookComponent,
     pub aabb: AABBCollisionComponent,
 
-    pub tmp_counter: f32,
+    pub target_dir: glam::Vec2,
+    pub max_move_interval: f32,
+    pub move_interval: f32,
 }
 
 impl Guard {
@@ -49,7 +51,9 @@ impl Guard {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
-            tmp_counter: 0.,
+            target_dir: glam::Vec2::ZERO,
+            max_move_interval: 0.,
+            move_interval: 0.,
         }
     }
 
@@ -65,9 +69,50 @@ impl Guard {
         self.aabb.colliding_axis = colliding_axis;
     }
 
+    pub fn calculate_move_dir(&self) -> glam::Vec2 {
+        let dx = 2. * constants::GUARD_FOV / self.look.ray_scales.len() as f32;
+
+        let max_ray_scale = self
+            .look
+            .ray_scales
+            .iter()
+            .enumerate()
+            .map(|(i, v)| (i, (*v * 100.) as i32))
+            .max_by(|(_, a), (_, b)| a.cmp(b));
+
+        if let Some((idx, max_ray)) = max_ray_scale {
+            if max_ray < 15 {
+                // Rotate 180 deg
+                return util::vec_from_angle(self.transform.angle + constants::PI);
+            }
+            return util::vec_from_angle(
+                self.transform.angle - constants::GUARD_FOV + idx as f32 * dx, // Go in the direction of the max_ray
+            );
+        }
+
+        // Go in random direction
+        return util::vec_from_angle(rand::random::<f32>() * constants::PI * 2.);
+    }
+
     pub fn update(&mut self, dt: f32) {
-        self.move_component
-            .set_direction_normalized(util::vec_from_angle(self.tmp_counter));
+        if self.move_interval <= 0. {
+            self.move_component
+                .set_direction_normalized(self.target_dir);
+
+            self.target_dir = self.calculate_move_dir();
+
+            self.max_move_interval = rand::random::<f32>() * 0.3 + 0.1;
+            self.move_interval = self.max_move_interval;
+        } else {
+            let lerped_dir = util::vec_lerp(
+                self.move_component.direction,
+                self.target_dir,
+                self.max_move_interval - self.move_interval,
+            );
+
+            self.move_component.set_direction_normalized(lerped_dir);
+        }
+
         self.look.look_at = self.move_component.direction;
         self.set_angle(self.move_component.direction);
 
@@ -87,7 +132,7 @@ impl Guard {
             self.animation.set_animation_state(AnimationState::Active);
         }
 
-        self.tmp_counter += dt;
+        self.move_interval -= dt;
     }
 }
 

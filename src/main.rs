@@ -67,7 +67,8 @@ impl GameState {
             audio::Source::new(ctx, "sounds/unstealth.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/teleport_initial.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/teleport.ogg").unwrap(),
-            audio::Source::new(ctx, "sounds/player_dead.ogg").unwrap(),
+            // audio::Source::new(ctx, "sounds/player_dead.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/stealth.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/target_killed.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/dead_target_detected.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/level_exit.ogg").unwrap(),
@@ -453,7 +454,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
-                // NOTE: If is_pressed is set to true, there is no PlayerAction to handle
+                // NOTE: there is no PlayerAction to handle here
                 self.mouse_input_handler.handle_pressed(true, curr_t);
             }
             _ => (),

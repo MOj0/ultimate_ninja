@@ -262,8 +262,9 @@ pub fn line_rect_intersection(
     })
 }
 
+// NOTE: y is inverted because screen's coordinate system
 pub fn vec_from_angle(angle: f32) -> glam::Vec2 {
-    glam::vec2(angle.cos(), angle.sin())
+    glam::vec2(angle.cos(), -angle.sin())
 }
 
 pub fn get_vec_angle(v: glam::Vec2) -> f32 {
@@ -271,6 +272,17 @@ pub fn get_vec_angle(v: glam::Vec2) -> f32 {
         return 0.;
     }
     v.angle_between(glam::vec2(1., 0.))
+}
+
+pub fn lerp(from: f32, to: f32, delta: f32) -> f32 {
+    (1.0 - delta) * from + delta * to
+}
+
+pub fn vec_lerp(from: glam::Vec2, to: glam::Vec2, delta: f32) -> glam::Vec2 {
+    let lerp_x = lerp(from.x, to.x, delta);
+    let lerp_y = lerp(from.y, to.y, delta);
+
+    glam::vec2(lerp_x, lerp_y)
 }
 
 pub fn make_particle_image(
