@@ -30,7 +30,7 @@ pub fn load_level(
         LEVEL_COUNT
     );
 
-    game_state.reset();
+    game_state.next_level();
 
     let assets = &game_state.assets;
 

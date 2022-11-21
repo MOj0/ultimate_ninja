@@ -262,11 +262,24 @@ pub fn line_rect_intersection(
     })
 }
 
+pub fn vec_from_angle(angle: f32) -> glam::Vec2 {
+    glam::vec2(angle.cos(), angle.sin())
+}
+
 pub fn get_vec_angle(v: glam::Vec2) -> f32 {
     if v.length_squared() == 0. {
         return 0.;
     }
     v.angle_between(glam::vec2(1., 0.))
+}
+
+pub fn make_particle_image(
+    ctx: &mut ggez::Context,
+    quad_ctx: &mut ggez::miniquad::Context,
+) -> ggez::graphics::Image {
+    let bytes = [u8::MAX; 4]; // 1 pixel texture with 1.0 in every color
+
+    ggez::graphics::Image::from_rgba8(ctx, quad_ctx, 1, 1, &bytes).unwrap()
 }
 
 pub fn build_walk_animation(

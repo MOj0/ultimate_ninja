@@ -1,5 +1,4 @@
 use crate::constants;
-use crate::level;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
 use crate::GameState;
@@ -14,7 +13,7 @@ pub struct Exit {
 impl Exit {
     pub fn new(position: glam::Vec2, sprite: SpriteComponent) -> Self {
         Self {
-            transform: TransformComponent::new(position, constants::ENTITY_SIZE), // TODO: Define a more appropriate scale for collision checking
+            transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             sprite,
             scale_rotation_counter: 0.,
             player_exited: false,

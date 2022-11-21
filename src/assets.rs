@@ -1,4 +1,4 @@
-use ggez::{audio, graphics, Context};
+use ggez::{graphics, Context};
 
 pub struct Assets {
     pub stand: graphics::Image,

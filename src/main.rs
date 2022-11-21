@@ -7,6 +7,7 @@ mod level;
 mod look_component;
 mod mouse_input_handler;
 mod move_component;
+mod particle_system;
 mod sound_collection;
 mod sprite_component;
 mod stamina_component;
@@ -26,10 +27,7 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics, Context, GameResult};
 
-use oorandom::Rand32;
-
 pub struct GameState {
-    rng: Rand32,
     assets: assets::Assets,
     player: entities::player::Player,
     target: entities::target::Target,
@@ -39,15 +37,13 @@ pub struct GameState {
     double_press_timer: Option<f32>,
     sound_collection: SoundCollection,
     mouse_input_handler: MouseInputHandler,
+    particle_system: particle_system::ParticleSystem,
     level_idx: usize,
     debug_draw: bool,
 }
 
 impl GameState {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
-        let seed = 123456;
-        let mut rng = oorandom::Rand32::new(seed);
-
         let assets = Assets::load(ctx, quad_ctx);
 
         let player = entities::player::Player::new(
@@ -95,10 +91,46 @@ impl GameState {
             80.,
         );
 
+        let mut particle_system = particle_system::ParticleSystem::new();
+        let particle_image = util::make_particle_image(ctx, quad_ctx);
+
+        let player_move_particle_emitter = particle_system::ParticleEmitter::new(
+            glam::Vec2::ZERO,
+            0.05,
+            0.1,
+            ggez::graphics::Color::WHITE,
+            2.,
+            100,
+            particle_image.clone(),
+        );
+
+        let target_killed_particle_emitter = particle_system::ParticleEmitter::new(
+            glam::Vec2::ZERO,
+            0.5,
+            1.,
+            ggez::graphics::Color::RED,
+            5.,
+            100,
+            particle_image.clone(),
+        );
+
+        let teleport_particle_emitter = particle_system::ParticleEmitter::new(
+            glam::Vec2::ZERO,
+            0.1,
+            0.3,
+            ggez::graphics::Color::WHITE,
+            5.,
+            100,
+            particle_image.clone(),
+        );
+
+        particle_system.add_emitter(player_move_particle_emitter);
+        particle_system.add_emitter(target_killed_particle_emitter);
+        particle_system.add_emitter(teleport_particle_emitter);
+
         let level_idx = 0;
 
         let mut game_state = GameState {
-            rng,
             assets,
             player,
             target,
@@ -108,6 +140,7 @@ impl GameState {
             double_press_timer: None,
             sound_collection,
             mouse_input_handler,
+            particle_system,
             level_idx,
             debug_draw: false,
         };
@@ -117,7 +150,7 @@ impl GameState {
         game_state
     }
 
-    pub fn reset(&mut self) {
+    pub fn next_level(&mut self) {
         self.player.is_detected = false;
         self.player.is_stealth = false;
         self.player.stealth_intent = false;
@@ -152,6 +185,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         look_component::system(self);
 
         entities::exit::system(self, dt);
+
+        particle_system::system(self, dt);
 
         if self.exit.player_exited {
             self.level_idx += 1;
@@ -316,6 +351,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             )?;
         }
 
+        self.particle_system.draw(ctx, quad_ctx)?;
+
         if self.debug_draw {
             graphics::draw(
                 ctx,
@@ -368,7 +405,11 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 } else if curr_t - self.double_press_timer.unwrap_or(-1.)
                     < constants::DOUBLE_PRESS_TIME
                 {
-                    self.player.teleport_action(ctx, &mut self.sound_collection);
+                    self.player.teleport_action(
+                        ctx,
+                        &mut self.sound_collection,
+                        &mut self.particle_system,
+                    );
                     self.double_press_timer = None;
                 } else {
                     self.double_press_timer = Some(curr_t);
@@ -433,7 +474,11 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
                 match self.mouse_input_handler.handle_pressed(false, curr_t) {
                     Some(mouse_input_handler::PlayerAction::Teleport) => {
-                        self.player.teleport_action(ctx, &mut self.sound_collection)
+                        self.player.teleport_action(
+                            ctx,
+                            &mut self.sound_collection,
+                            &mut self.particle_system,
+                        )
                     }
                     Some(mouse_input_handler::PlayerAction::Stealth(is_stealth)) => {
                         self.player.set_stealth_intent(is_stealth)

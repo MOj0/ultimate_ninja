@@ -1,6 +1,7 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::collision_component::AABBCollisionComponent;
 use crate::move_component::MoveComponent;
+use crate::particle_system::ParticleSystem;
 use crate::stamina_component::StaminaComponent;
 use crate::teleport_component::TeleportComponent;
 use crate::transform_component::TransformComponent;
@@ -104,10 +105,15 @@ impl Player {
     }
 
     #[inline]
+    pub fn is_moving(&self) -> bool {
+        self.move_component.direction.length_squared() > 0.
+    }
+
     pub fn teleport_action(
         &mut self,
         ctx: &mut ggez::Context,
         sound_collection: &mut SoundCollection,
+        particle_system: &mut ParticleSystem,
     ) {
         if self.teleport.location.is_none()
             && self.stamina.stamina > constants::TELEPORT_COST_INTIAL
@@ -117,6 +123,8 @@ impl Player {
 
             sound_collection.play(ctx, 2).unwrap();
         } else if self.stamina.stamina > constants::TELEPORT_COST {
+            particle_system.emit(2, self.transform.position, 8);
+
             self.transform
                 .set(self.teleport.location.as_ref().unwrap().position);
 
@@ -173,10 +181,24 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
         return;
     }
 
+    if player.is_moving() {
+        let random_dir = 4. * util::vec_from_angle(rand::random::<f32>() * 2. * constants::PI);
+        let emit_position = player.transform.position
+            - 1.75 * player.transform.size * player.move_component.direction
+            + random_dir;
+
+        game_state.particle_system.emit(0, emit_position, 1);
+    }
+
     let target = &mut game_state.target;
     if !target.is_dead && util::check_collision(&player.transform, &target.transform) {
         target.is_dead = true;
+
         sound_collection.play(ctx, 5).unwrap();
+
+        game_state
+            .particle_system
+            .emit(1, target.transform.position, 50);
     }
 
     let exit = &mut game_state.exit;

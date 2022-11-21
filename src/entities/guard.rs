@@ -67,7 +67,7 @@ impl Guard {
 
     pub fn update(&mut self, dt: f32) {
         self.move_component
-            .set_direction_normalized(glam::vec2(self.tmp_counter.cos(), -self.tmp_counter.sin()));
+            .set_direction_normalized(util::vec_from_angle(self.tmp_counter));
         self.look.look_at = self.move_component.direction;
         self.set_angle(self.move_component.direction);
 
