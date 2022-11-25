@@ -88,9 +88,17 @@ impl Target {
             .max_by(|(_, a), (_, b)| a.cmp(b));
 
         if let Some((idx, max_ray)) = max_ray_scale {
-            if max_ray < 15 {
+            if max_ray < 60 {
                 // Rotate 180 deg
                 return util::vec_from_angle(self.transform.angle + constants::PI);
+            }
+            if max_ray < 100 {
+                // Rotate 90 deg
+                return util::vec_from_angle(
+                    self.transform.angle
+                        + (rand::random::<bool>()).then(|| 1.).unwrap_or(-1.)
+                        + constants::PI / 2.,
+                );
             }
             return util::vec_from_angle(
                 self.transform.angle - constants::GUARD_FOV + idx as f32 * dx, // Go in the direction of the max_ray
