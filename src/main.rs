@@ -175,6 +175,10 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
     ) -> Result<(), ggez::GameError> {
         let dt = ggez::timer::delta(ctx).as_secs_f32();
 
+        if self.player.is_detected {
+            return Ok(());
+        }
+
         mouse_input_handler::system(self, ggez::timer::time_since_start(ctx).as_secs_f32());
 
         entities::wall::check_collision(self);
@@ -357,6 +361,15 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
         self.particle_system.draw(ctx, quad_ctx)?;
 
+        if self.player.is_detected {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Game over"), 24.),
+                DrawParam::from((glam::vec2(380., 280.),)),
+            )?;
+        }
+
         if self.debug_draw {
             graphics::draw(
                 ctx,
@@ -420,6 +433,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                 }
             }
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
+            KeyCode::R => level::load_level(ctx, _quad_ctx, self, self.level_idx),
             KeyCode::B => self.debug_draw = !self.debug_draw,
             _ => (),
         }
