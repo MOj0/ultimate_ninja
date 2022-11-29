@@ -17,9 +17,10 @@ pub struct Guard {
     pub look: LookComponent,
     pub aabb: AABBCollisionComponent,
 
-    pub target_dir: glam::Vec2,
+    pub move_dir: glam::Vec2,
     pub max_move_interval: f32,
     pub move_interval: f32,
+    pub look_color: ggez::graphics::Color,
 }
 
 impl Guard {
@@ -52,9 +53,10 @@ impl Guard {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
-            target_dir: glam::Vec2::ZERO,
+            move_dir: glam::Vec2::ZERO,
             max_move_interval: 0.,
             move_interval: 0.,
+            look_color: ggez::graphics::Color::WHITE,
         }
     }
 
@@ -68,6 +70,11 @@ impl Guard {
     #[inline]
     pub fn set_speed(&mut self, speed: f32) {
         self.move_component.speed = speed;
+    }
+
+    #[inline]
+    pub fn set_look_color(&mut self, look_color: ggez::graphics::Color) {
+        self.look_color = look_color;
     }
 
     #[inline]
@@ -110,17 +117,16 @@ impl Guard {
 
     pub fn update(&mut self, dt: f32) {
         if self.move_interval <= 0. {
-            self.move_component
-                .set_direction_normalized(self.target_dir);
+            self.move_component.set_direction_normalized(self.move_dir);
 
-            self.target_dir = self.calculate_move_dir();
+            self.move_dir = self.calculate_move_dir();
 
             self.max_move_interval = rand::random::<f32>() * 0.3 + 0.1;
             self.move_interval = self.max_move_interval;
         } else {
             let lerped_dir = util::vec_lerp(
                 self.move_component.direction,
-                self.target_dir,
+                self.move_dir,
                 self.max_move_interval - self.move_interval,
             );
 
@@ -163,7 +169,8 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
         game_state.player.is_detected = false;
     }
 
-    if game_state.target.is_dead
+    if !game_state.dead_target_detected
+        && game_state.target.is_dead
         && is_transform_detected(
             &game_state.walls,
             &game_state.guards,
@@ -171,10 +178,12 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
             false,
         )
     {
-        game_state
-            .guards
-            .iter_mut()
-            .for_each(|guard| guard.set_speed(constants::GUARD_SPEED * 1.5));
+        game_state.guards.iter_mut().for_each(|guard| {
+            guard.set_speed(constants::GUARD_SPEED * 1.5);
+            guard.set_look_color(ggez::graphics::Color::RED);
+        });
+
+        game_state.dead_target_detected = true;
     }
 
     game_state

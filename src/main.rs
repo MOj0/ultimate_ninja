@@ -39,6 +39,7 @@ pub struct GameState {
     mouse_input_handler: MouseInputHandler,
     particle_system: particle_system::ParticleSystem,
     level_idx: usize,
+    dead_target_detected: bool,
     debug_draw: bool,
 }
 
@@ -142,6 +143,7 @@ impl GameState {
             mouse_input_handler,
             particle_system,
             level_idx,
+            dead_target_detected: false,
             debug_draw: false,
         };
 
@@ -156,6 +158,7 @@ impl GameState {
         self.player.stealth_intent = false;
 
         self.target.is_dead = false;
+        self.dead_target_detected = false;
 
         self.exit.player_exited = false;
 
@@ -266,7 +269,8 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
                                 .rotation(
                                     -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
                                 )
-                                .scale(glam::Vec2::splat(*scale)),
+                                .scale(glam::Vec2::splat(*scale))
+                                .color(guard.look_color),
                         )
                     })
                     .count()

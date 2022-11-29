@@ -42,7 +42,7 @@ impl LookComponent {
     ) -> Self {
         let rays = Self::make_rays(look_at, fov, view_distance, n_rays);
         let fov_mesh_composition =
-            Self::make_fov_mesh_composition(ctx, quad_ctx, look_at, view_distance, &rays);
+            Self::mesh_composition_from_rays(ctx, quad_ctx, look_at, view_distance, &rays);
 
         // Build a line mesh for each ray
         let ray_lines = rays
@@ -95,7 +95,7 @@ impl LookComponent {
             .collect()
     }
 
-    fn make_fov_mesh_composition(
+    fn mesh_composition_from_rays(
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         look_at: glam::Vec2,
@@ -134,7 +134,7 @@ impl LookComponent {
                     quad_ctx,
                     ggez::graphics::DrawMode::fill(),
                     &fov_points,
-                    ggez::graphics::Color::from_rgba(127, 0, 0, 127),
+                    ggez::graphics::Color::from_rgba(255, 255, 255, 125),
                 )
                 .unwrap()
             })
