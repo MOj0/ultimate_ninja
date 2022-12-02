@@ -1,7 +1,7 @@
 use crate::constants;
 use crate::transform_component::TransformComponent;
 use crate::util;
-use crate::GameState;
+use crate::Game;
 
 pub struct LookComponent {
     pub look_at: glam::Vec2,
@@ -189,7 +189,7 @@ impl LookComponent {
     }
 }
 
-pub fn system(game_state: &mut GameState) {
+pub fn system(game_state: &mut Game) {
     let transform_look_components = game_state
         .guards
         .iter_mut()

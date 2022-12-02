@@ -7,7 +7,7 @@ use crate::entities::wall::Wall;
 use crate::SpriteComponent;
 use std::io::Read;
 
-use crate::GameState;
+use crate::Game;
 
 const ALL_LEVELS: &[&str] = &[
     "levels/level0.txt",
@@ -20,7 +20,7 @@ pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 pub fn load_level(
     ctx: &mut ggez::Context,
     quad_ctx: &mut ggez::miniquad::GraphicsContext,
-    game_state: &mut GameState,
+    game_state: &mut Game,
     level_index: usize,
 ) {
     assert!(
@@ -30,7 +30,7 @@ pub fn load_level(
         LEVEL_COUNT
     );
 
-    game_state.next_level();
+    game_state.reset_state();
 
     let assets = &game_state.assets;
 

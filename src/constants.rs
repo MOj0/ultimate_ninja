@@ -13,10 +13,11 @@ pub const ENTITY_SIZE: f32 = 8.;
 
 pub const PLAYER_SPEED: f32 = 3.;
 
-pub const TARGET_SPEED: f32 = 2.;
-pub const GUARD_SPEED: f32 = 2.2;
+pub const TARGET_SPEED: f32 = 1.;
+pub const GUARD_SPEED: f32 = 1.8;
+pub const GUARD_SPEED_FAST: f32 = 2.8;
 pub const GUARD_FOV: f32 = PI / 6.;
-pub const GUARD_VIEW_DISTANCE: f32 = 200.;
+pub const GUARD_VIEW_DISTANCE: f32 = 170.;
 
 pub const ANIMATION_SPEED: f32 = 0.1575;
 
@@ -25,3 +26,10 @@ pub const HOLD_THRESHOLD_TIME: f32 = 0.4; // sec
 
 pub const TELEPORT_COST_INTIAL: f32 = 25.;
 pub const TELEPORT_COST: f32 = 50.;
+
+pub const MENU_RECT_DIM: glam::Vec2 = glam::vec2(200., 75.);
+
+pub const MENU_PLAY_POS: glam::Vec2 = glam::vec2(550., 250.);
+pub const MENU_INFO_POS: glam::Vec2 = glam::vec2(550., 400.);
+pub const MENU_BACK_POS: glam::Vec2 = glam::vec2(30., 30.);
+pub const MENU_OK_POS: glam::Vec2 = glam::vec2(330., 500.);

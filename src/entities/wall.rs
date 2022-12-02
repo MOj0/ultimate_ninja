@@ -4,7 +4,7 @@ use crate::entities;
 use crate::move_component::MoveComponent;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
-use crate::GameState;
+use crate::Game;
 
 pub struct Wall {
     pub transform: TransformComponent,
@@ -56,7 +56,7 @@ fn get_colliding_vec_components_all(
     })
 }
 
-pub fn check_collision(game_state: &mut GameState) {
+pub fn check_collision(game_state: &mut Game) {
     let player_colliding_vec_components = get_colliding_vec_components_all(
         &game_state.walls,
         &game_state.player.transform,

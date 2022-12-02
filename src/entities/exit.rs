@@ -1,7 +1,7 @@
 use crate::constants;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
-use crate::GameState;
+use crate::Game;
 
 pub struct Exit {
     pub transform: TransformComponent,
@@ -28,6 +28,6 @@ impl Exit {
     }
 }
 
-pub fn system(game_state: &mut GameState, dt: f32) {
+pub fn system(game_state: &mut Game, dt: f32) {
     game_state.exit.update(dt);
 }

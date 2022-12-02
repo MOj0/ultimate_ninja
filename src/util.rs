@@ -327,3 +327,10 @@ pub fn build_walk_animation(
 pub fn compute_animation_duration(speed: f32) -> f32 {
     speed.recip() * constants::ANIMATION_SPEED
 }
+
+pub fn rect_contains_point(rect_dim: glam::Vec2, rect_pos: glam::Vec2, point: glam::Vec2) -> bool {
+    point.x >= rect_pos.x
+        && point.x <= rect_pos.x + rect_dim.x
+        && point.y >= rect_pos.y
+        && point.y <= rect_pos.y + rect_dim.y
+}

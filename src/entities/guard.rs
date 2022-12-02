@@ -8,6 +8,7 @@ use crate::move_component::MoveComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
+use crate::Game;
 use crate::GameState;
 
 pub struct Guard {
@@ -156,17 +157,15 @@ impl Guard {
     }
 }
 
-pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
+pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     if is_transform_detected(
         &game_state.walls,
         &game_state.guards,
         &game_state.player.transform,
         game_state.player.is_stealth,
     ) {
-        game_state.player.is_detected = true;
+        game_state.game_state = GameState::GameOver;
         game_state.sound_collection.play(ctx, 4).unwrap();
-    } else {
-        game_state.player.is_detected = false;
     }
 
     if !game_state.dead_target_detected
@@ -179,7 +178,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
         )
     {
         game_state.guards.iter_mut().for_each(|guard| {
-            guard.set_speed(constants::GUARD_SPEED * 1.5);
+            guard.set_speed(constants::GUARD_SPEED_FAST);
             guard.set_look_color(ggez::graphics::Color::RED);
         });
 

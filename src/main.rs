@@ -27,7 +27,17 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics, Context, GameResult};
 
-pub struct GameState {
+#[derive(PartialEq)]
+pub enum GameState {
+    Menu,
+    Info,
+    Game,
+    GameOver,
+    EndScreen,
+}
+
+pub struct Game {
+    game_state: GameState,
     assets: assets::Assets,
     player: entities::player::Player,
     target: entities::target::Target,
@@ -41,10 +51,13 @@ pub struct GameState {
     level_idx: usize,
     dead_target_detected: bool,
     debug_draw: bool,
+    menu_rectangle: graphics::Mesh,
 }
 
-impl GameState {
+impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
+        let game_state = GameState::Menu;
+
         let assets = Assets::load(ctx, quad_ctx);
 
         let player = entities::player::Player::new(
@@ -131,7 +144,23 @@ impl GameState {
 
         let level_idx = 0;
 
-        let mut game_state = GameState {
+        let menu_rectangle = graphics::Mesh::new_rounded_rectangle(
+            ctx,
+            quad_ctx,
+            graphics::DrawMode::fill(),
+            graphics::Rect::new(
+                0.,
+                0.,
+                constants::MENU_RECT_DIM.x,
+                constants::MENU_RECT_DIM.y,
+            ),
+            10.,
+            graphics::Color::new(0.25, 0.25, 0.25, 0.6),
+        )
+        .unwrap();
+
+        let mut game_state = Game {
+            game_state,
             assets,
             player,
             target,
@@ -145,6 +174,7 @@ impl GameState {
             level_idx,
             dead_target_detected: false,
             debug_draw: false,
+            menu_rectangle,
         };
 
         level::load_level(ctx, quad_ctx, &mut game_state, level_idx);
@@ -152,8 +182,11 @@ impl GameState {
         game_state
     }
 
-    pub fn next_level(&mut self) {
-        self.player.is_detected = false;
+    pub fn reset_state(&mut self) {
+        if self.game_state == GameState::GameOver {
+            self.game_state = GameState::Game;
+        }
+
         self.player.is_stealth = false;
         self.player.stealth_intent = false;
 
@@ -164,53 +197,110 @@ impl GameState {
 
         self.guards.clear();
         self.walls.clear();
-    }
-}
 
-impl ggez::event::EventHandler<ggez::GameError> for GameState {
-    fn update(
-        &mut self,
+        self.particle_system.reset();
+    }
+
+    fn draw_menu(
+        &self,
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        let dt = ggez::timer::delta(ctx).as_secs_f32();
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Ultimate Ninja".into(), 42.),
+            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+        )?;
 
-        if self.player.is_detected {
-            return Ok(());
-        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_PLAY_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Play".into(), 36.),
+            graphics::DrawParam::default().dest(glam::vec2(610., 270.)),
+        )?;
 
-        mouse_input_handler::system(self, ggez::timer::time_since_start(ctx).as_secs_f32());
-
-        entities::wall::check_collision(self);
-
-        entities::player::system(ctx, self, dt);
-
-        self.target.update(dt);
-
-        entities::guard::system(ctx, self, dt);
-
-        look_component::system(self);
-
-        entities::exit::system(self, dt);
-
-        particle_system::system(self, dt);
-
-        if self.exit.player_exited {
-            self.level_idx += 1;
-            level::load_level(ctx, quad_ctx, self, self.level_idx);
-        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_INFO_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Info".into(), 36.),
+            graphics::DrawParam::default().dest(glam::vec2(610., 420.)),
+        )?;
 
         Ok(())
     }
 
-    fn draw(
+    fn draw_info(
+        &self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Ultimate Ninja".into(), 42.),
+            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_BACK_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Back".into(), 36.),
+            graphics::DrawParam::default().dest(glam::vec2(90., 50.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default()
+                .dest(glam::vec2(50., 250.))
+                .scale(glam::vec2(3.7, 4.1)),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(
+                "Assassinate the green target\n
+Do not get spotted by guards\n
+Move around by using the touch joystick in the bottom right\n
+Tap and hold for stealth\n
+Double click to create a teleport marker at your position\n
+Double click again to teleport there\n
+Be wary of your stamina\n
+When you complete your mission, a pathway to the next level will appear"
+                    .into(),
+                18.,
+            ),
+            graphics::DrawParam::default().dest(glam::vec2(80., 270.)),
+        )?;
+
+        Ok(())
+    }
+
+    fn draw_game(
         &mut self,
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        let gray = graphics::Color::new(0.5, 0.5, 0.5, 1.);
-        graphics::clear(ctx, quad_ctx, gray);
-
         use graphics::DrawParam;
 
         if self.player.teleport.location.is_some() {
@@ -361,12 +451,39 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
 
         self.particle_system.draw(ctx, quad_ctx)?;
 
-        if self.player.is_detected {
+        if self.game_state == GameState::GameOver {
             graphics::draw(
                 ctx,
                 quad_ctx,
-                &util::make_text(format!("Game over"), 24.),
-                DrawParam::from((glam::vec2(380., 280.),)),
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(glam::vec2(320., 250.))
+                    .color(graphics::Color::BLACK),
+            )?;
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Game over"), 32.),
+                DrawParam::default()
+                    .dest(glam::vec2(350., 270.))
+                    .color(graphics::Color::RED),
+            )?;
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(constants::MENU_OK_POS)
+                    .color(graphics::Color::BLACK),
+            )?;
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Restart"), 32.),
+                DrawParam::default().dest(glam::vec2(365., 520.)),
             )?;
         }
 
@@ -380,21 +497,71 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             graphics::draw(
                 ctx,
                 quad_ctx,
-                &util::make_text(
-                    format!("is_player_detected: {}", self.player.is_detected),
-                    24.,
-                ),
-                DrawParam::from((glam::vec2(4., 56.),)),
-            )?;
-            graphics::draw(
-                ctx,
-                quad_ctx,
                 &util::make_text(format!("player_exited: {}", self.exit.player_exited), 24.),
                 DrawParam::from((glam::vec2(4., 80.),)),
             )?;
         }
 
         Ok(())
+    }
+}
+
+impl ggez::event::EventHandler<ggez::GameError> for Game {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        if self.game_state == GameState::Menu
+            || self.game_state == GameState::Info
+            || self.game_state == GameState::GameOver
+        {
+            return Ok(());
+        }
+
+        let dt = ggez::timer::delta(ctx).as_secs_f32();
+
+        mouse_input_handler::system(self, ggez::timer::time_since_start(ctx).as_secs_f32());
+
+        entities::wall::check_collision(self);
+
+        entities::player::system(ctx, self, dt);
+
+        self.target.update(dt);
+
+        entities::guard::system(ctx, self, dt);
+
+        look_component::system(self);
+
+        entities::exit::system(self, dt);
+
+        particle_system::system(self, dt);
+
+        if self.exit.player_exited {
+            self.level_idx += 1;
+            level::load_level(ctx, quad_ctx, self, self.level_idx);
+        }
+
+        Ok(())
+    }
+
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        let gray = graphics::Color::new(0.5, 0.5, 0.5, 1.);
+        graphics::clear(ctx, quad_ctx, gray);
+
+        if self.game_state == GameState::Menu {
+            return self.draw_menu(ctx, quad_ctx);
+        }
+
+        if self.game_state == GameState::Info {
+            return self.draw_info(ctx, quad_ctx);
+        }
+
+        self.draw_game(ctx, quad_ctx)
     }
 
     fn key_down_event(
@@ -416,6 +583,10 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             KeyCode::D => self.player.set_x_dir(1.),
             KeyCode::F => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
+
+                if self.game_state == GameState::GameOver {
+                    return;
+                }
 
                 if repeat {
                     self.player.set_stealth_intent(true);
@@ -464,15 +635,30 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
         ctx: &mut Context,
         _quad_ctx: &mut miniquad::GraphicsContext,
         button: MouseButton,
-        _x: f32,
-        _y: f32,
+        x: f32,
+        y: f32,
     ) {
         match button {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
+                if self.game_state != GameState::Game || self.game_state == GameState::GameOver {
+                    if let Some(new_game_state) =
+                        self.mouse_input_handler
+                            .handle_menu_pressed(&self.game_state, x, y)
+                    {
+                        if self.game_state == GameState::GameOver {
+                            level::load_level(ctx, _quad_ctx, self, self.level_idx);
+                        }
+
+                        self.game_state = new_game_state;
+                    }
+
+                    return;
+                }
+
                 // NOTE: there is no PlayerAction to handle here
-                self.mouse_input_handler.handle_pressed(true, curr_t);
+                self.mouse_input_handler.handle_game_pressed(true, curr_t);
             }
             _ => (),
         }
@@ -490,7 +676,7 @@ impl ggez::event::EventHandler<ggez::GameError> for GameState {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
-                match self.mouse_input_handler.handle_pressed(false, curr_t) {
+                match self.mouse_input_handler.handle_game_pressed(false, curr_t) {
                     Some(mouse_input_handler::PlayerAction::Teleport) => {
                         self.player.teleport_action(
                             ctx,
@@ -540,6 +726,6 @@ fn main() -> GameResult {
         .physical_root_dir(Some(resource_dir));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
-        Box::new(GameState::new(&mut context, &mut quad_ctx))
+        Box::new(Game::new(&mut context, &mut quad_ctx))
     })
 }

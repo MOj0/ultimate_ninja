@@ -7,7 +7,7 @@ use crate::teleport_component::TeleportComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
-use crate::GameState;
+use crate::Game;
 use crate::SoundCollection;
 use crate::SpriteComponent;
 
@@ -22,7 +22,6 @@ pub struct Player {
     pub stamina: StaminaComponent,
     pub teleport: TeleportComponent,
 
-    pub is_detected: bool,
     pub stealth_intent: bool,
     pub is_stealth: bool,
     pub was_stealth_prev: bool,
@@ -55,7 +54,6 @@ impl Player {
                 SpriteComponent::new(assets.teleport.clone(), ggez::graphics::Color::WHITE)
                     .scale(constants::SPRITE_SCALE),
             ),
-            is_detected: false,
             stamina: StaminaComponent::new(
                 ctx,
                 quad_ctx,
@@ -170,7 +168,7 @@ impl Player {
     }
 }
 
-pub fn system(ctx: &mut ggez::Context, game_state: &mut GameState, dt: f32) {
+pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     let player = &mut game_state.player;
     player.update(dt);
 

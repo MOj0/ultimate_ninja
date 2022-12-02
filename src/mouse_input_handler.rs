@@ -1,4 +1,6 @@
 use crate::constants;
+use crate::util;
+use crate::Game;
 use crate::GameState;
 
 pub struct MouseInputHandler {
@@ -59,7 +61,60 @@ impl MouseInputHandler {
         }
     }
 
-    pub fn handle_pressed(&mut self, is_pressed: bool, curr_time: f32) -> Option<PlayerAction> {
+    pub fn handle_menu_pressed(
+        &self,
+        game_state: &GameState,
+        mx: f32,
+        my: f32,
+    ) -> Option<GameState> {
+        let mouse_vec = glam::vec2(mx, my);
+
+        if *game_state == GameState::Menu {
+            if util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_PLAY_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Game);
+            }
+
+            if util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_INFO_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Info);
+            }
+        }
+
+        if *game_state == GameState::Info {
+            if util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_BACK_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Menu);
+            }
+        }
+
+        if *game_state == GameState::GameOver {
+            if util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_OK_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Game);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn handle_game_pressed(
+        &mut self,
+        is_pressed: bool,
+        curr_time: f32,
+    ) -> Option<PlayerAction> {
         let mut player_action: Option<PlayerAction> = None;
 
         // Touch is released
@@ -116,7 +171,7 @@ impl MouseInputHandler {
     }
 }
 
-pub fn system(game_state: &mut GameState, curr_time: f32) {
+pub fn system(game_state: &mut Game, curr_time: f32) {
     if let Some(PlayerAction::Stealth(is_stealth)) =
         game_state.mouse_input_handler.get_player_action(curr_time)
     {

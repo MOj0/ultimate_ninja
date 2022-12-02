@@ -1,6 +1,6 @@
 use crate::constants;
 use crate::util;
-use crate::GameState;
+use crate::Game;
 use rand::Rng;
 
 pub struct ParticleSystem {
@@ -21,6 +21,10 @@ impl ParticleSystem {
         self.emitters
             .iter_mut()
             .for_each(|emitter| emitter.update(dt));
+    }
+
+    pub fn reset(&mut self) {
+        self.emitters.iter_mut().for_each(|emitter| emitter.reset());
     }
 
     pub fn draw(
@@ -45,6 +49,7 @@ impl ParticleSystem {
 pub struct ParticleEmitter {
     // Emitter
     emitter_position: glam::Vec2,
+    max_particles: usize,
     min_lifetime: f32,
     max_lifetime: f32,
 
@@ -73,6 +78,7 @@ impl ParticleEmitter {
 
         Self {
             emitter_position: position,
+            max_particles,
             min_lifetime,
             max_lifetime,
             sprite_batch,
@@ -83,6 +89,13 @@ impl ParticleEmitter {
             scales: vec![0.; max_particles],
             lifetimes: vec![0.; max_particles],
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.positions = vec![glam::Vec2::ZERO; self.max_particles];
+        self.velocities = vec![glam::Vec2::ZERO; self.max_particles];
+        self.scales = vec![0.; self.max_particles];
+        self.lifetimes = vec![0.; self.max_particles];
     }
 
     #[inline]
@@ -154,6 +167,6 @@ impl ParticleEmitter {
     }
 }
 
-pub fn system(game_state: &mut GameState, dt: f32) {
+pub fn system(game_state: &mut Game, dt: f32) {
     game_state.particle_system.update(dt);
 }
