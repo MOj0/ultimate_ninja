@@ -52,6 +52,8 @@ pub struct Game {
     dead_target_detected: bool,
     debug_draw: bool,
     menu_rectangle: graphics::Mesh,
+    curr_level_time: f32,
+    level_times: [f32; level::LEVEL_COUNT],
 }
 
 impl Game {
@@ -175,6 +177,8 @@ impl Game {
             dead_target_detected: false,
             debug_draw: false,
             menu_rectangle,
+            curr_level_time: 0.,
+            level_times: [0.; level::LEVEL_COUNT],
         };
 
         level::load_level(ctx, quad_ctx, &mut game_state, level_idx);
@@ -199,6 +203,8 @@ impl Game {
         self.walls.clear();
 
         self.particle_system.reset();
+
+        self.curr_level_time = 0.;
     }
 
     fn draw_menu(
@@ -291,6 +297,39 @@ When you complete your mission, a pathway to the next level will appear"
                 18.,
             ),
             graphics::DrawParam::default().dest(glam::vec2(80., 270.)),
+        )?;
+
+        Ok(())
+    }
+
+    fn draw_end_screen(
+        &self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_OK_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Menu".into(), 36.),
+            graphics::DrawParam::default().dest(glam::vec2(350., 530.)),
+        )?;
+
+        let level_times = (0..level::LEVEL_COUNT)
+            .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx, self.level_times[lvl_idx]))
+            .reduce(|acc, itm| acc + &itm)
+            .unwrap();
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(level_times, 24.),
+            graphics::DrawParam::default().dest(glam::vec2(250., 20.)),
         )?;
 
         Ok(())
@@ -487,17 +526,18 @@ When you complete your mission, a pathway to the next level will appear"
             )?;
         }
 
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
+            DrawParam::from((glam::vec2(740., 570.),)),
+        )?;
+
         if self.debug_draw {
             graphics::draw(
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-                DrawParam::from((glam::vec2(4., 32.),)),
-            )?;
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &util::make_text(format!("player_exited: {}", self.exit.player_exited), 24.),
                 DrawParam::from((glam::vec2(4., 80.),)),
             )?;
         }
@@ -537,9 +577,19 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         particle_system::system(self, dt);
 
+        self.curr_level_time += dt;
+
         if self.exit.player_exited {
-            self.level_idx += 1;
-            level::load_level(ctx, quad_ctx, self, self.level_idx);
+            self.level_times[self.level_idx] = self.curr_level_time;
+
+            if self.level_idx == level::LEVEL_COUNT - 1 {
+                self.reset_state();
+                self.level_idx = 0;
+                self.game_state = GameState::EndScreen;
+            } else {
+                self.level_idx += 1;
+                level::load_level(ctx, quad_ctx, self, self.level_idx);
+            }
         }
 
         Ok(())
@@ -559,6 +609,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         if self.game_state == GameState::Info {
             return self.draw_info(ctx, quad_ctx);
+        }
+
+        if self.game_state == GameState::EndScreen {
+            return self.draw_end_screen(ctx, quad_ctx);
         }
 
         self.draw_game(ctx, quad_ctx)
@@ -605,6 +659,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             }
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, _quad_ctx, self, self.level_idx),
+            // // TODO: Delete this [debugging purposes]
+            // KeyCode::E => {
+            //     self.target.is_dead = true;
+            //     self.exit.player_exited = true;
+            // }
             KeyCode::B => self.debug_draw = !self.debug_draw,
             _ => (),
         }
@@ -633,7 +692,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
     fn mouse_button_down_event(
         &mut self,
         ctx: &mut Context,
-        _quad_ctx: &mut miniquad::GraphicsContext,
+        quad_ctx: &mut miniquad::GraphicsContext,
         button: MouseButton,
         x: f32,
         y: f32,
@@ -642,13 +701,16 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
-                if self.game_state != GameState::Game || self.game_state == GameState::GameOver {
+                if self.game_state != GameState::Game
+                    || self.game_state == GameState::GameOver
+                    || self.game_state == GameState::EndScreen
+                {
                     if let Some(new_game_state) =
                         self.mouse_input_handler
                             .handle_menu_pressed(&self.game_state, x, y)
                     {
-                        if self.game_state == GameState::GameOver {
-                            level::load_level(ctx, _quad_ctx, self, self.level_idx);
+                        if new_game_state == GameState::Game {
+                            level::load_level(ctx, quad_ctx, self, self.level_idx);
                         }
 
                         self.game_state = new_game_state;

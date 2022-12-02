@@ -9,11 +9,7 @@ use std::io::Read;
 
 use crate::Game;
 
-const ALL_LEVELS: &[&str] = &[
-    "levels/level0.txt",
-    "levels/level1.txt",
-    "levels/level_end.txt",
-];
+const ALL_LEVELS: &[&str] = &["levels/level0.txt", "levels/level1.txt"];
 
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 

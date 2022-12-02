@@ -97,13 +97,17 @@ impl MouseInputHandler {
             }
         }
 
-        if *game_state == GameState::GameOver {
+        if *game_state == GameState::GameOver || *game_state == GameState::EndScreen {
             if util::rect_contains_point(
                 constants::MENU_RECT_DIM,
                 constants::MENU_OK_POS,
                 mouse_vec,
             ) {
-                return Some(GameState::Game);
+                if *game_state == GameState::GameOver {
+                    return Some(GameState::Game);
+                } else {
+                    return Some(GameState::Menu);
+                }
             }
         }
 
