@@ -183,6 +183,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         });
 
         game_state.dead_target_detected = true;
+        game_state.sound_collection.play(ctx, 6).unwrap();
     }
 
     game_state
