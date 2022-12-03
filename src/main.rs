@@ -1,5 +1,6 @@
 mod animation_component;
 mod assets;
+mod camera_component;
 mod collision_component;
 mod constants;
 mod entities;
@@ -19,6 +20,7 @@ use crate::assets::Assets;
 use crate::mouse_input_handler::MouseInputHandler;
 use crate::sound_collection::SoundCollection;
 use crate::sprite_component::SpriteComponent;
+use crate::transform_component::TransformComponent;
 
 extern crate good_web_game as ggez;
 
@@ -39,6 +41,7 @@ pub enum GameState {
 pub struct Game {
     game_state: GameState,
     assets: assets::Assets,
+    camera: camera_component::CameraComponent,
     player: entities::player::Player,
     target: entities::target::Target,
     guards: Vec<entities::guard::Guard>,
@@ -61,6 +64,14 @@ impl Game {
         let game_state = GameState::Menu;
 
         let assets = Assets::load(ctx, quad_ctx);
+
+        let camera = camera_component::CameraComponent::new(
+            TransformComponent::new(glam::Vec2::ZERO, 0.),
+            glam::vec2(
+                (constants::WIDTH / 2) as f32,
+                (constants::HEIGHT / 2) as f32,
+            ),
+        );
 
         let player = entities::player::Player::new(
             ctx,
@@ -164,6 +175,7 @@ impl Game {
         let mut game_state = Game {
             game_state,
             assets,
+            camera,
             player,
             target,
             guards: vec![],
@@ -347,7 +359,10 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &self.player.teleport.sprite,
-                DrawParam::default().dest(self.player.teleport.location.as_ref().unwrap().position),
+                DrawParam::default().dest(
+                    self.camera
+                        .world_position(self.player.teleport.location.as_ref().unwrap().position),
+                ),
             )?;
         }
 
@@ -356,7 +371,7 @@ When you complete your mission, a pathway to the next level will appear"
             quad_ctx,
             &self.player.animation.get_curr_frame(),
             DrawParam::default()
-                .dest(self.player.transform.position)
+                .dest(self.camera.world_position(self.player.transform.position))
                 .rotation(-self.player.transform.angle),
         )?;
 
@@ -365,7 +380,7 @@ When you complete your mission, a pathway to the next level will appear"
             quad_ctx,
             &self.target.get_curr_animation_frame(),
             DrawParam::default()
-                .dest(self.target.transform.position)
+                .dest(self.camera.world_position(self.target.transform.position))
                 .rotation(-self.target.transform.angle),
         )?;
 
@@ -377,7 +392,7 @@ When you complete your mission, a pathway to the next level will appear"
                     quad_ctx,
                     &guard.animation.get_curr_frame(),
                     DrawParam::default()
-                        .dest(guard.transform.position)
+                        .dest(self.camera.world_position(guard.transform.position))
                         .rotation(-guard.transform.angle),
                 )
             })
@@ -398,7 +413,7 @@ When you complete your mission, a pathway to the next level will appear"
                             quad_ctx,
                             fov_section,
                             DrawParam::default()
-                                .dest(guard.transform.position)
+                                .dest(self.camera.world_position(guard.transform.position))
                                 .rotation(
                                     -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
                                 )
@@ -426,7 +441,7 @@ When you complete your mission, a pathway to the next level will appear"
                                 quad_ctx,
                                 ray_line,
                                 DrawParam::default()
-                                    .dest(guard.transform.position)
+                                    .dest(self.camera.world_position(guard.transform.position))
                                     .rotation(
                                         -constants::PI / 2.
                                             - util::get_vec_angle(guard.look.look_at),
@@ -447,7 +462,7 @@ When you complete your mission, a pathway to the next level will appear"
                     quad_ctx,
                     &wall.sprite,
                     DrawParam::default()
-                        .dest(wall.transform.position)
+                        .dest(self.camera.world_position(wall.transform.position))
                         .scale(wall.sprite.scale),
                 )
             })
@@ -483,12 +498,12 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &self.exit.sprite,
                 DrawParam::default()
-                    .dest(self.exit.transform.position)
+                    .dest(self.camera.world_position(self.exit.transform.position))
                     .rotation(-self.exit.scale_rotation_counter),
             )?;
         }
 
-        self.particle_system.draw(ctx, quad_ctx)?;
+        self.particle_system.draw(ctx, quad_ctx, &self.camera)?;
 
         if self.game_state == GameState::GameOver {
             graphics::draw(
@@ -538,7 +553,16 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-                DrawParam::from((glam::vec2(4., 80.),)),
+                DrawParam::from((glam::vec2(4., 32.),)),
+            )?;
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(
+                    format!("camera_center: {}", self.camera.center.position),
+                    24.,
+                ),
+                DrawParam::from((glam::vec2(4., 64.),)),
             )?;
         }
 
@@ -577,6 +601,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         particle_system::system(self, dt);
 
+        camera_component::system(self);
+
         self.curr_level_time += dt;
 
         if self.exit.player_exited {
@@ -600,8 +626,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        let gray = graphics::Color::new(0.5, 0.5, 0.5, 1.);
-        graphics::clear(ctx, quad_ctx, gray);
+        graphics::clear(ctx, quad_ctx, constants::GRAY_COLOR);
 
         if self.game_state == GameState::Menu {
             return self.draw_menu(ctx, quad_ctx);
@@ -621,7 +646,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        _quad_ctx: &mut miniquad::Context,
+        quad_ctx: &mut miniquad::Context,
         keycode: KeyCode,
         _keymods: KeyMods,
         repeat: bool,
@@ -658,7 +683,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                 }
             }
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
-            KeyCode::R => level::load_level(ctx, _quad_ctx, self, self.level_idx),
+            KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx),
             // // TODO: Delete this [debugging purposes]
             // KeyCode::E => {
             //     self.target.is_dead = true;

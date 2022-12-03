@@ -50,7 +50,11 @@ pub fn load_level(
                     position,
                     &assets,
                     ggez::graphics::Color::BLACK,
-                )
+                );
+
+                game_state
+                    .camera
+                    .update(game_state.player.transform.clone());
             }
             't' => game_state.target = Target::new(position, &assets, ggez::graphics::Color::GREEN),
             'g' => game_state.guards.push(Guard::new(

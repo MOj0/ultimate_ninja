@@ -1,3 +1,4 @@
+use crate::camera_component::CameraComponent;
 use crate::constants;
 use crate::util;
 use crate::Game;
@@ -31,10 +32,11 @@ impl ParticleSystem {
         &mut self,
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::Context,
+        camera: &CameraComponent,
     ) -> ggez::GameResult {
         self.emitters
             .iter_mut()
-            .map(|emitter| emitter.draw(ctx, quad_ctx))
+            .map(|emitter| emitter.draw(ctx, quad_ctx, camera))
             .count();
 
         Ok(())
@@ -138,6 +140,7 @@ impl ParticleEmitter {
         &mut self,
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::Context,
+        camera: &CameraComponent,
     ) -> ggez::GameResult {
         self.sprite_batch.clear();
         for (particle_idx, _) in self
@@ -146,7 +149,7 @@ impl ParticleEmitter {
             .enumerate()
             .filter(|(_, lifetime)| **lifetime > 0.)
         {
-            let pos = self.positions[particle_idx];
+            let pos = camera.world_position(self.positions[particle_idx]);
             let scale = self.scales[particle_idx];
 
             let draw_param = ggez::graphics::DrawParam::default()

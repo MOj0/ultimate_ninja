@@ -334,3 +334,8 @@ pub fn rect_contains_point(rect_dim: glam::Vec2, rect_pos: glam::Vec2, point: gl
         && point.y >= rect_pos.y
         && point.y <= rect_pos.y + rect_dim.y
 }
+
+#[inline]
+pub fn clamp(v: f32, min: f32, max: f32) -> f32 {
+    v.min(max).max(min)
+}

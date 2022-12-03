@@ -4,6 +4,13 @@ pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
 pub const GRID_SIZE: u32 = 40; // size 40 produces 20x15 grid (at 800x600)
 
+/// Numer of characters in level text files
+pub const LEVEL_SIZE: (u32, u32) = (30, 20);
+pub const MAX_WORLD_X: u32 = GRID_SIZE * LEVEL_SIZE.0;
+pub const MAX_WORLD_Y: u32 = GRID_SIZE * LEVEL_SIZE.1;
+
+pub const GRAY_COLOR: ggez::graphics::Color = ggez::graphics::Color::new(0.5, 0.5, 0.5, 1.);
+
 pub const PI: f32 = std::f32::consts::PI;
 
 pub const SPRITE_SIZE: u32 = 108;
