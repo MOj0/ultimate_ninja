@@ -219,6 +219,19 @@ impl Game {
         self.curr_level_time = 0.;
     }
 
+    fn next_level(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) {
+        self.level_times[self.level_idx] = self.curr_level_time;
+
+        if self.level_idx == level::LEVEL_COUNT - 1 {
+            self.reset_state();
+            self.level_idx = 0;
+            self.game_state = GameState::EndScreen;
+        } else {
+            self.level_idx += 1;
+            level::load_level(ctx, quad_ctx, self, self.level_idx);
+        }
+    }
+
     fn draw_menu(
         &self,
         ctx: &mut Context,
@@ -297,7 +310,7 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text(
-                "Assassinate the green target\n
+                "Eliminate the green target\n
 Do not get spotted by guards\n
 Move around by using the touch joystick in the bottom right\n
 Tap and hold for stealth\n
@@ -606,16 +619,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         self.curr_level_time += dt;
 
         if self.exit.player_exited {
-            self.level_times[self.level_idx] = self.curr_level_time;
-
-            if self.level_idx == level::LEVEL_COUNT - 1 {
-                self.reset_state();
-                self.level_idx = 0;
-                self.game_state = GameState::EndScreen;
-            } else {
-                self.level_idx += 1;
-                level::load_level(ctx, quad_ctx, self, self.level_idx);
-            }
+            self.next_level(ctx, quad_ctx);
         }
 
         Ok(())
@@ -656,10 +660,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         }
 
         match keycode {
-            KeyCode::W => self.player.set_y_dir(-1.),
-            KeyCode::S => self.player.set_y_dir(1.),
-            KeyCode::A => self.player.set_x_dir(-1.),
-            KeyCode::D => self.player.set_x_dir(1.),
+            KeyCode::W | KeyCode::Up => self.player.set_y_dir(-1.),
+            KeyCode::S | KeyCode::Down => self.player.set_y_dir(1.),
+            KeyCode::A | KeyCode::Left => self.player.set_x_dir(-1.),
+            KeyCode::D | KeyCode::Right => self.player.set_x_dir(1.),
             KeyCode::F => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
@@ -684,12 +688,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             }
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx),
-            // // TODO: Delete this [debugging purposes]
-            // KeyCode::E => {
-            //     self.target.is_dead = true;
-            //     self.exit.player_exited = true;
-            // }
             KeyCode::B => self.debug_draw = !self.debug_draw,
+            KeyCode::L => self.next_level(ctx, quad_ctx), // TODO: Delete this [debugging purposes]
             _ => (),
         }
     }
@@ -701,13 +701,21 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         keycode: KeyCode,
         _keymods: KeyMods,
     ) {
-        if keycode == KeyCode::W && self.player.move_component.direction.y < 0. {
+        if (keycode == KeyCode::W || keycode == KeyCode::Up)
+            && self.player.move_component.direction.y < 0.
+        {
             self.player.set_y_dir(0.);
-        } else if keycode == KeyCode::S && self.player.move_component.direction.y > 0. {
+        } else if (keycode == KeyCode::S || keycode == KeyCode::Down)
+            && self.player.move_component.direction.y > 0.
+        {
             self.player.set_y_dir(0.);
-        } else if keycode == KeyCode::A && self.player.move_component.direction.x < 0. {
+        } else if (keycode == KeyCode::A || keycode == KeyCode::Left)
+            && self.player.move_component.direction.x < 0.
+        {
             self.player.set_x_dir(0.);
-        } else if keycode == KeyCode::D && self.player.move_component.direction.x > 0. {
+        } else if (keycode == KeyCode::D || keycode == KeyCode::Right)
+            && self.player.move_component.direction.x > 0.
+        {
             self.player.set_x_dir(0.);
         } else if keycode == KeyCode::F {
             self.player.set_stealth_intent(false);

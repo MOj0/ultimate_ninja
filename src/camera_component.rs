@@ -5,7 +5,6 @@ use crate::util;
 use crate::Game;
 
 pub struct CameraComponent {
-    // TODO: Use static reference
     pub center: TransformComponent,
     pub size: glam::Vec2,
 }
@@ -17,18 +16,19 @@ impl CameraComponent {
     }
 
     pub fn update(&mut self, center: TransformComponent) {
-        self.center = center;
-
-        self.center.position.x = util::clamp(
-            self.center.position.x,
+        let mut target_center = center;
+        target_center.position.x = util::clamp(
+            target_center.position.x,
             self.size.x,
             constants::MAX_WORLD_X as f32 - self.size.x,
         );
-        self.center.position.y = util::clamp(
-            self.center.position.y,
+        target_center.position.y = util::clamp(
+            target_center.position.y,
             self.size.y,
             constants::MAX_WORLD_Y as f32 - self.size.y,
         );
+
+        self.center.position = util::vec_lerp(self.center.position, target_center.position, 0.33);
     }
 
     #[inline]
