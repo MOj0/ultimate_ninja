@@ -9,7 +9,16 @@ use std::io::Read;
 
 use crate::Game;
 
-const ALL_LEVELS: &[&str] = &["levels/level0.txt", "levels/level1.txt"];
+const ALL_LEVELS: &[&str] = &[
+    "levels/level1.txt",
+    "levels/level2.txt",
+    "levels/level3.txt",
+    "levels/level4.txt",
+    "levels/level5.txt",
+    "levels/level6.txt",
+    "levels/level7.txt",
+    "levels/level8.txt",
+];
 
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 
@@ -41,13 +50,14 @@ pub fn load_level(
             (x as u32 * constants::GRID_SIZE) as f32,
             (y as u32 * constants::GRID_SIZE) as f32,
         );
+        let position_center = position + glam::Vec2::splat(constants::GRID_SIZE as f32 / 2.);
 
         match char {
             'p' => {
                 game_state.player = Player::new(
                     ctx,
                     quad_ctx,
-                    position,
+                    position_center,
                     &assets,
                     ggez::graphics::Color::BLACK,
                 );
@@ -56,11 +66,14 @@ pub fn load_level(
                     .camera
                     .update(game_state.player.transform.clone());
             }
-            't' => game_state.target = Target::new(position, &assets, ggez::graphics::Color::GREEN),
+            't' => {
+                game_state.target =
+                    Target::new(position_center, &assets, ggez::graphics::Color::GREEN)
+            }
             'g' => game_state.guards.push(Guard::new(
                 ctx,
                 quad_ctx,
-                position,
+                position_center,
                 &assets,
                 ggez::graphics::Color::RED,
             )),
@@ -84,7 +97,7 @@ pub fn load_level(
             )),
             'e' => {
                 game_state.exit = Exit::new(
-                    position,
+                    position_center,
                     SpriteComponent::new(assets.exit.clone(), ggez::graphics::Color::WHITE),
                 )
             }
