@@ -369,15 +369,24 @@ When you complete your mission, a pathway to the next level will appear"
         )?;
 
         let level_times = (0..level::LEVEL_COUNT)
-            .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx, self.level_times[lvl_idx]))
+            .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx + 1, self.level_times[lvl_idx]))
             .reduce(|acc, itm| acc + &itm)
             .unwrap();
+
+        let total_time = self.level_times.iter().sum::<f32>();
 
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text(level_times, 24.),
             graphics::DrawParam::default().dest(glam::vec2(250., 20.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(format!("Total time: {:.3}", total_time), 24.),
+            graphics::DrawParam::default().dest(glam::vec2(250., 450.)),
         )?;
 
         Ok(())
@@ -435,31 +444,34 @@ When you complete your mission, a pathway to the next level will appear"
             .count();
 
         // Draw look mesh compositions
-        self.guards
-            .iter()
-            .map(|guard| {
-                guard
-                    .look
-                    .fov_mesh_composition
-                    .iter()
-                    .zip(&guard.look.ray_scales)
-                    .flat_map(|(fov_section, scale)| {
-                        sprite_component::render_mesh(
-                            ctx,
-                            quad_ctx,
-                            fov_section,
-                            DrawParam::default()
-                                .dest(self.camera.world_position(guard.transform.position))
-                                .rotation(
-                                    -constants::PI / 2. - util::get_vec_angle(guard.look.look_at),
-                                )
-                                .scale(glam::Vec2::splat(*scale))
-                                .color(guard.look_color),
-                        )
-                    })
-                    .count()
-            })
-            .count();
+        if self.game_state != GameState::LevelAnimation {
+            self.guards
+                .iter()
+                .map(|guard| {
+                    guard
+                        .look
+                        .fov_mesh_composition
+                        .iter()
+                        .zip(&guard.look.ray_scales)
+                        .flat_map(|(fov_section, scale)| {
+                            sprite_component::render_mesh(
+                                ctx,
+                                quad_ctx,
+                                fov_section,
+                                DrawParam::default()
+                                    .dest(self.camera.world_position(guard.transform.position))
+                                    .rotation(
+                                        -constants::PI / 2.
+                                            - util::get_vec_angle(guard.look.look_at),
+                                    )
+                                    .scale(glam::Vec2::splat(*scale))
+                                    .color(guard.look_color),
+                            )
+                        })
+                        .count()
+                })
+                .count();
+        }
 
         if self.debug_draw {
             // Draw look rays
