@@ -7,12 +7,22 @@ use crate::Game;
 pub struct CameraComponent {
     pub center: TransformComponent,
     pub size: glam::Vec2,
+    pub lerp_delta: f32,
 }
 
 impl CameraComponent {
     #[inline]
-    pub fn new(center: TransformComponent, size: glam::Vec2) -> Self {
-        Self { center, size }
+    pub fn new(center: TransformComponent, size: glam::Vec2, lerp_delta: f32) -> Self {
+        Self {
+            center,
+            size,
+            lerp_delta,
+        }
+    }
+
+    #[inline]
+    pub fn set_lerp_delta(&mut self, lerp_delta: f32) {
+        self.lerp_delta = lerp_delta;
     }
 
     pub fn update(&mut self, center: TransformComponent) {
@@ -28,7 +38,11 @@ impl CameraComponent {
             constants::MAX_WORLD_Y as f32 - self.size.y,
         );
 
-        self.center.position = util::vec_lerp(self.center.position, target_center.position, 0.33);
+        self.center.position = util::vec_lerp(
+            self.center.position,
+            target_center.position,
+            self.lerp_delta,
+        );
     }
 
     #[inline]

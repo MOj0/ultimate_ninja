@@ -34,6 +34,7 @@ pub enum GameState {
     Menu,
     Info,
     Game,
+    LevelAnimation,
     GameOver,
     EndScreen,
 }
@@ -71,6 +72,7 @@ impl Game {
                 (constants::WIDTH / 2) as f32,
                 (constants::HEIGHT / 2) as f32,
             ),
+            constants::CAMERA_DEFAULT_LERP_DELTA,
         );
 
         let player = entities::player::Player::new(
@@ -172,7 +174,7 @@ impl Game {
         )
         .unwrap();
 
-        let mut game_state = Game {
+        let game_state = Game {
             game_state,
             assets,
             camera,
@@ -192,8 +194,6 @@ impl Game {
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
         };
-
-        level::load_level(ctx, quad_ctx, &mut game_state, level_idx);
 
         game_state
     }
@@ -229,7 +229,30 @@ impl Game {
         } else {
             self.level_idx += 1;
             level::load_level(ctx, quad_ctx, self, self.level_idx);
+            self.game_state = GameState::LevelAnimation;
+            self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
         }
+    }
+
+    fn do_level_animation(&mut self, dt: f32) {
+        if self.curr_level_time <= 0. {
+            self.camera
+                .set_lerp_delta(constants::CAMERA_DEFAULT_LERP_DELTA);
+
+            self.curr_level_time = 0.;
+            self.game_state = GameState::Game;
+
+            return;
+        }
+
+        self.camera.set_lerp_delta(0.05);
+        if self.curr_level_time >= constants::LEVEL_ANIMATION_TIME / 2. {
+            self.camera.update(self.target.transform.clone());
+        } else {
+            self.camera.update(self.player.transform.clone());
+        }
+
+        self.curr_level_time -= dt;
     }
 
     fn draw_menu(
@@ -526,7 +549,8 @@ When you complete your mission, a pathway to the next level will appear"
                 graphics::DrawParam::default()
                     .dest(glam::vec2(320., 250.))
                     .color(graphics::Color::BLACK),
-            )?;
+            )
+            .unwrap();
 
             graphics::draw(
                 ctx,
@@ -535,7 +559,8 @@ When you complete your mission, a pathway to the next level will appear"
                 DrawParam::default()
                     .dest(glam::vec2(350., 270.))
                     .color(graphics::Color::RED),
-            )?;
+            )
+            .unwrap();
 
             graphics::draw(
                 ctx,
@@ -544,14 +569,16 @@ When you complete your mission, a pathway to the next level will appear"
                 graphics::DrawParam::default()
                     .dest(constants::MENU_OK_POS)
                     .color(graphics::Color::BLACK),
-            )?;
+            )
+            .unwrap();
 
             graphics::draw(
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("Restart"), 32.),
                 DrawParam::default().dest(glam::vec2(365., 520.)),
-            )?;
+            )
+            .unwrap();
         }
 
         graphics::draw(
@@ -597,6 +624,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         }
 
         let dt = ggez::timer::delta(ctx).as_secs_f32();
+
+        if self.game_state == GameState::LevelAnimation {
+            self.do_level_animation(dt);
+
+            return Ok(());
+        }
 
         mouse_input_handler::system(self, ggez::timer::time_since_start(ctx).as_secs_f32());
 
@@ -734,7 +767,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
-                if self.game_state != GameState::Game
+                if self.game_state == GameState::Menu
+                    || self.game_state == GameState::Info
                     || self.game_state == GameState::GameOver
                     || self.game_state == GameState::EndScreen
                 {
@@ -744,9 +778,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     {
                         if new_game_state == GameState::Game {
                             level::load_level(ctx, quad_ctx, self, self.level_idx);
+                            self.game_state = GameState::LevelAnimation;
+                            self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
+                        } else {
+                            self.game_state = new_game_state;
                         }
-
-                        self.game_state = new_game_state;
                     }
 
                     return;

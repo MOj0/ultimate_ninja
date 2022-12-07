@@ -40,3 +40,7 @@ pub const MENU_PLAY_POS: glam::Vec2 = glam::vec2(550., 250.);
 pub const MENU_INFO_POS: glam::Vec2 = glam::vec2(550., 400.);
 pub const MENU_BACK_POS: glam::Vec2 = glam::vec2(30., 30.);
 pub const MENU_OK_POS: glam::Vec2 = glam::vec2(330., 500.);
+
+pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
+
+pub const LEVEL_ANIMATION_TIME: f32 = 4.;
