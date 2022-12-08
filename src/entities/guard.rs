@@ -11,6 +11,8 @@ use crate::Assets;
 use crate::Game;
 use crate::GameState;
 
+use quad_rand as qrand;
+
 pub struct Guard {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
@@ -102,9 +104,7 @@ impl Guard {
             if max_ray < 100 {
                 // Rotate 90 deg
                 return util::vec_from_angle(
-                    self.transform.angle
-                        + (rand::random::<bool>()).then(|| 1.).unwrap_or(-1.)
-                        + constants::PI / 2.,
+                    self.transform.angle + (qrand::gen_range::<f32>(0., 1.)) * constants::PI / 2.,
                 );
             }
             return util::vec_from_angle(
@@ -113,7 +113,7 @@ impl Guard {
         }
 
         // Go in random direction
-        return util::vec_from_angle(rand::random::<f32>() * constants::PI * 2.);
+        return util::vec_from_angle(qrand::gen_range::<f32>(0., 1.) * constants::PI * 2.);
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -122,7 +122,7 @@ impl Guard {
 
             self.move_dir = self.calculate_move_dir();
 
-            self.max_move_interval = rand::random::<f32>() * 0.3 + 0.1;
+            self.max_move_interval = qrand::gen_range::<f32>(0.1, 0.4);
             self.move_interval = self.max_move_interval;
         } else {
             let lerped_dir = util::vec_lerp(

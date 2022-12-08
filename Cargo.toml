@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 good-web-game = "0.6.0"
 glam = {version="0.21.3", features=["mint"]}
-rand = "0.7.3"
+quad-rand = "0.2.1"
 lyon_geom = "1.0.1"

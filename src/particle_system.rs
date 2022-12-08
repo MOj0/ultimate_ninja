@@ -2,7 +2,7 @@ use crate::camera_component::CameraComponent;
 use crate::constants;
 use crate::util;
 use crate::Game;
-use rand::Rng;
+use quad_rand as qrand;
 
 pub struct ParticleSystem {
     emitters: Vec<ParticleEmitter>,
@@ -106,16 +106,15 @@ impl ParticleEmitter {
     }
 
     pub fn emit(&mut self, n_particles: u32) {
-        let mut rng = rand::thread_rng();
         let mut created_particles = 0;
 
         for (i, lifetime) in self.lifetimes.iter_mut().enumerate() {
             if *lifetime <= 0. {
                 // Create new particle
                 self.positions[i] = self.emitter_position;
-                self.velocities[i] = util::vec_from_angle(rng.gen_range(0., 2. * constants::PI));
+                self.velocities[i] = util::vec_from_angle(qrand::gen_range(0., 2. * constants::PI));
                 self.scales[i] = self.initial_scale;
-                *lifetime = rng.gen_range(self.min_lifetime, self.max_lifetime);
+                *lifetime = qrand::gen_range(self.min_lifetime, self.max_lifetime);
 
                 created_particles += 1;
                 if created_particles >= n_particles {

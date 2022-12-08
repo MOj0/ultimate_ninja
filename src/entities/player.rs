@@ -14,6 +14,8 @@ use crate::SpriteComponent;
 use crate::constants;
 use crate::entities;
 
+use quad_rand as qrand;
+
 pub struct Player {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
@@ -180,7 +182,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     }
 
     if player.is_moving() {
-        let random_dir = 4. * util::vec_from_angle(rand::random::<f32>() * 2. * constants::PI);
+        let random_dir = 4. * util::vec_from_angle(qrand::gen_range(0., 1.) * 2. * constants::PI);
         let emit_position = player.transform.position
             - 1.75 * player.transform.size * player.move_component.direction
             + random_dir;

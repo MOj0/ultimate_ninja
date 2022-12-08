@@ -862,11 +862,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 }
 
 fn main() -> GameResult {
-    let resource_dir = std::path::PathBuf::from("./resources");
-
     let conf = ggez::conf::Conf::default()
         .window_title("Ultimate Ninja".to_owned())
-        .physical_root_dir(Some(resource_dir));
+        .cache(Some(include_bytes!("resources.tar")));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
         Box::new(Game::new(&mut context, &mut quad_ctx))
