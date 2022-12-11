@@ -124,6 +124,10 @@ pub fn line_line_intersection(
     x4: f32,
     y4: f32,
 ) -> Option<glam::Vec2> {
+    if !line_line_intersects(x1, y1, x2, y2, x3, y3, x4, y4) {
+        return None;
+    }
+
     //Line1
     let a1 = y2 - y1;
     let b1 = x1 - x2;

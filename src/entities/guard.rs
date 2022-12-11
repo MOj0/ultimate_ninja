@@ -48,7 +48,7 @@ impl Guard {
                 glam::vec2(0., 1.),
                 constants::GUARD_FOV,
                 constants::GUARD_VIEW_DISTANCE,
-                8,
+                constants::N_FOV_RAYS,
             ),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,

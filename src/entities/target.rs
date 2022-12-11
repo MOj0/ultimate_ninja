@@ -48,7 +48,7 @@ impl Target {
                 glam::vec2(0., 1.),
                 constants::GUARD_FOV,
                 constants::GUARD_VIEW_DISTANCE,
-                8,
+                constants::N_FOV_RAYS,
             ),
             is_dead: false,
             target_dir: glam::Vec2::ZERO,

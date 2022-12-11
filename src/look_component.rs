@@ -41,8 +41,7 @@ impl LookComponent {
         n_rays: u32,
     ) -> Self {
         let rays = Self::make_rays(look_at, fov, view_distance, n_rays);
-        let fov_mesh_composition =
-            Self::mesh_composition_from_rays(ctx, quad_ctx, look_at, view_distance, &rays);
+        let fov_mesh_composition = Self::mesh_composition_from_rays(ctx, quad_ctx, &rays);
 
         // Build a line mesh for each ray
         let ray_lines = rays
@@ -98,8 +97,6 @@ impl LookComponent {
     fn mesh_composition_from_rays(
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
-        look_at: glam::Vec2,
-        view_distance: f32,
         rays: &Vec<glam::Vec2>,
     ) -> Vec<ggez::graphics::Mesh> {
         let top_left = glam::vec2(0., 0.);
@@ -107,27 +104,7 @@ impl LookComponent {
         return rays
             .windows(2)
             .map(|fov_rays| {
-                // Swapping these values makes a cool effect :D
-                let fov_corner1 = fov_rays[1];
-                let fov_corner2 = fov_rays[0];
-                let intersection = (fov_corner1 - fov_corner2) / 2. + fov_corner2;
-
-                let arc_points = util::get_arc_points(
-                    intersection,
-                    glam::vec2(
-                        ((fov_corner1 - fov_corner2) / 2.).length(),
-                        view_distance - intersection.length(),
-                    ),
-                    0.,
-                    constants::PI,
-                    -constants::PI / 2. - util::get_vec_angle(look_at),
-                );
-
-                let fov_points = vec![top_left, fov_corner1]
-                    .into_iter()
-                    .chain(arc_points)
-                    .chain(std::iter::once(fov_corner2))
-                    .collect::<Vec<glam::Vec2>>();
+                let fov_points = vec![top_left, fov_rays[0], fov_rays[1]];
 
                 ggez::graphics::Mesh::new_polygon(
                     ctx,
@@ -146,7 +123,7 @@ impl LookComponent {
         source: &TransformComponent,
         rect_objects: &Vec<&ggez::graphics::Rect>,
     ) {
-        let lines: Vec<(f32, f32, f32, f32)> = self
+        let ray_lines: Vec<(f32, f32, f32, f32)> = self
             .rays
             .iter()
             .map(|ray| {
@@ -162,26 +139,26 @@ impl LookComponent {
             .collect();
 
         // Get and set the scale [0.0, 1.0] for each ray
-        self.ray_scales = lines
+        self.ray_scales = ray_lines
             .iter()
-            .map(|line| {
+            .enumerate()
+            .map(|(ray_idx, ray_line)| {
                 rect_objects
                     .iter()
                     .filter_map(|rect| {
-                        util::line_rect_intersection(line.0, line.1, line.2, line.3, rect)
+                        util::line_rect_intersection(
+                            ray_line.0, ray_line.1, ray_line.2, ray_line.3, rect,
+                        )
                     })
                     .min_by_key(|intersect_point| {
-                        ((line.0 - intersect_point.x).abs() + (line.1 - intersect_point.y).abs())
-                            as u32
+                        ((ray_line.0 - intersect_point.x).abs()
+                            + (ray_line.1 - intersect_point.y).abs()) as u32
                     })
                     .map_or_else(
                         || 1.0,
                         |min_intersection_point| {
-                            let scale = (glam::vec2(line.0, line.1) - min_intersection_point)
-                                .length()
-                                / (glam::vec2(line.0, line.1) - glam::vec2(line.2, line.3))
-                                    .length();
-                            scale.min(1.0)
+                            (glam::vec2(ray_line.0, ray_line.1) - min_intersection_point).length()
+                                / self.rays[ray_idx].length()
                         },
                     )
             })
