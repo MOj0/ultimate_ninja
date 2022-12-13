@@ -122,7 +122,7 @@ impl LookComponent {
         &mut self,
         source: &TransformComponent,
         rect_objects: &Vec<&ggez::graphics::Rect>,
-    ) {
+    ) -> Vec<(usize, f32)> {
         let ray_lines: Vec<(f32, f32, f32, f32)> = self
             .rays
             .iter()
@@ -139,30 +139,50 @@ impl LookComponent {
             .collect();
 
         // Get and set the scale [0.0, 1.0] for each ray
-        self.ray_scales = ray_lines
+        let wall_idx_and_ray_scales: Vec<(Option<usize>, f32)> = ray_lines
             .iter()
             .enumerate()
             .map(|(ray_idx, ray_line)| {
                 rect_objects
                     .iter()
-                    .filter_map(|rect| {
-                        util::line_rect_intersection(
+                    .enumerate()
+                    .filter_map(|(wall_idx, rect)| {
+                        let intersect_point = util::line_rect_intersection(
                             ray_line.0, ray_line.1, ray_line.2, ray_line.3, rect,
-                        )
+                        );
+
+                        if let Some(point) = intersect_point {
+                            return Some((wall_idx, point));
+                        }
+                        None
                     })
-                    .min_by_key(|intersect_point| {
+                    .min_by_key(|(_, intersect_point)| {
                         ((ray_line.0 - intersect_point.x).abs()
                             + (ray_line.1 - intersect_point.y).abs()) as u32
                     })
                     .map_or_else(
-                        || 1.0,
-                        |min_intersection_point| {
-                            (glam::vec2(ray_line.0, ray_line.1) - min_intersection_point).length()
-                                / self.rays[ray_idx].length()
+                        || (None, 1.0),
+                        |(wall_idx, min_intersection_point)| {
+                            (
+                                Some(wall_idx),
+                                (glam::vec2(ray_line.0, ray_line.1) - min_intersection_point)
+                                    .length()
+                                    / self.rays[ray_idx].length(),
+                            )
                         },
                     )
             })
-            .collect::<Vec<f32>>();
+            .collect();
+
+        for (ray_idx, (_, ray_scale)) in wall_idx_and_ray_scales.iter().enumerate() {
+            self.ray_scales[ray_idx] = *ray_scale;
+        }
+
+        wall_idx_and_ray_scales
+            .iter()
+            .filter(|(wall_idx, _)| wall_idx.is_some())
+            .map(|(wall_idx, ray_scale)| (wall_idx.unwrap(), *ray_scale))
+            .collect::<Vec<(usize, f32)>>()
     }
 }
 
@@ -178,12 +198,21 @@ pub fn system(game_state: &mut Game) {
         .map(|wall| &wall.aabb.rect)
         .collect::<Vec<&ggez::graphics::Rect>>();
 
+    let mut brightness_vec = vec![constants::GLOBAL_BRIGHTNESS; game_state.walls.len()];
     for (transform, look) in transform_look_components {
-        look.update(transform, &aabb_objects);
+        let wall_idx_and_ray_scales = look.update(transform, &aabb_objects);
+
+        for (wall_idx, ray_scale) in wall_idx_and_ray_scales.iter() {
+            brightness_vec[*wall_idx] = (1.5 - *ray_scale).min(1.);
+        }
     }
 
     game_state
         .target
         .look
         .update(&game_state.target.transform, &aabb_objects);
+
+    for (wall_idx, brightness) in brightness_vec.iter().enumerate() {
+        game_state.walls[wall_idx].set_brightness(*brightness);
+    }
 }

@@ -9,7 +9,9 @@ pub const LEVEL_SIZE: (u32, u32) = (30, 20);
 pub const MAX_WORLD_X: u32 = GRID_SIZE * LEVEL_SIZE.0;
 pub const MAX_WORLD_Y: u32 = GRID_SIZE * LEVEL_SIZE.1;
 
-pub const GRAY_COLOR: ggez::graphics::Color = ggez::graphics::Color::new(0.5, 0.5, 0.5, 0.5);
+pub const BG_COLOR: ggez::graphics::Color = ggez::graphics::Color::new(0.125, 0.125, 0.125, 0.5);
+
+pub const GLOBAL_BRIGHTNESS: f32 = 0.2;
 
 pub const PI: f32 = std::f32::consts::PI;
 

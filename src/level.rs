@@ -27,6 +27,7 @@ pub fn load_level(
     quad_ctx: &mut ggez::miniquad::GraphicsContext,
     game_state: &mut Game,
     level_index: usize,
+    is_proceed: bool,
 ) {
     assert!(
         level_index < LEVEL_COUNT,
@@ -35,7 +36,7 @@ pub fn load_level(
         LEVEL_COUNT
     );
 
-    game_state.reset_state();
+    game_state.reset_state(is_proceed);
 
     let assets = &game_state.assets;
 

@@ -198,7 +198,7 @@ impl Game {
         game_state
     }
 
-    pub fn reset_state(&mut self) {
+    pub fn reset_state(&mut self, is_proceed: bool) {
         if self.game_state == GameState::GameOver {
             self.game_state = GameState::Game;
         }
@@ -216,19 +216,26 @@ impl Game {
 
         self.particle_system.reset();
 
-        self.curr_level_time = 0.;
+        if is_proceed {
+            self.curr_level_time = 0.;
+        }
     }
 
-    fn next_level(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) {
+    fn next_level(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        is_proceeed: bool,
+    ) {
         self.level_times[self.level_idx] = self.curr_level_time;
 
         if self.level_idx == level::LEVEL_COUNT - 1 {
-            self.reset_state();
+            self.reset_state(is_proceeed);
             self.level_idx = 0;
             self.game_state = GameState::EndScreen;
         } else {
             self.level_idx += 1;
-            level::load_level(ctx, quad_ctx, self, self.level_idx);
+            level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceeed);
             self.game_state = GameState::LevelAnimation;
             self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
         }
@@ -511,7 +518,15 @@ When you complete your mission, a pathway to the next level will appear"
                     &wall.sprite,
                     DrawParam::default()
                         .dest(self.camera.world_position(wall.transform.position))
-                        .scale(wall.sprite.scale),
+                        .scale(wall.sprite.scale)
+                        .color(graphics::Color::new(
+                            wall.brightness,
+                            wall.brightness
+                                * self.dead_target_detected.then_some(0.5).unwrap_or(1.),
+                            wall.brightness
+                                * self.dead_target_detected.then_some(0.5).unwrap_or(1.),
+                            1.,
+                        )),
                 )
             })
             .count();
@@ -664,7 +679,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         self.curr_level_time += dt;
 
         if self.exit.player_exited {
-            self.next_level(ctx, quad_ctx);
+            self.next_level(ctx, quad_ctx, true);
         }
 
         Ok(())
@@ -675,7 +690,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        graphics::clear(ctx, quad_ctx, constants::GRAY_COLOR);
+        graphics::clear(ctx, quad_ctx, constants::BG_COLOR);
 
         if self.game_state == GameState::Menu {
             return self.draw_menu(ctx, quad_ctx);
@@ -732,9 +747,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                 }
             }
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
-            KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx),
+            KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,
-            KeyCode::L => self.next_level(ctx, quad_ctx), // TODO: Delete this [debugging purposes]
+            KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             _ => (),
         }
     }
@@ -789,7 +804,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                             .handle_menu_pressed(&self.game_state, x, y)
                     {
                         if new_game_state == GameState::Game {
-                            level::load_level(ctx, quad_ctx, self, self.level_idx);
+                            level::load_level(ctx, quad_ctx, self, self.level_idx, true);
                             self.game_state = GameState::LevelAnimation;
                             self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
                         } else {

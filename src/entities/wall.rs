@@ -10,6 +10,7 @@ pub struct Wall {
     pub transform: TransformComponent,
     pub aabb: AABBCollisionComponent,
     pub sprite: SpriteComponent,
+    pub brightness: f32,
 }
 
 impl Wall {
@@ -23,7 +24,13 @@ impl Wall {
                 width / constants::SPRITE_SIZE as f32,
                 height / constants::SPRITE_SIZE as f32,
             )),
+            brightness: constants::GLOBAL_BRIGHTNESS,
         }
+    }
+
+    #[inline]
+    pub fn set_brightness(&mut self, brightness: f32) {
+        self.brightness = brightness;
     }
 
     pub fn get_colliding_vec_components(
