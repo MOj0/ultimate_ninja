@@ -56,6 +56,7 @@ pub struct Game {
     dead_target_detected: bool,
     debug_draw: bool,
     menu_rectangle: graphics::Mesh,
+    n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
 }
@@ -191,6 +192,7 @@ impl Game {
             dead_target_detected: false,
             debug_draw: false,
             menu_rectangle,
+            n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
         };
@@ -236,6 +238,8 @@ impl Game {
         } else {
             self.level_idx += 1;
             level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceeed);
+
+            self.n_objects = 1 + self.guards.len() + self.walls.len();
             self.game_state = GameState::LevelAnimation;
             self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
         }
@@ -405,6 +409,7 @@ When you complete your mission, a pathway to the next level will appear"
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
         use graphics::DrawParam;
+        let mut n_objects_drawn = 0;
 
         if self.player.teleport.location.is_some() {
             sprite_component::render_sprite(
@@ -427,17 +432,22 @@ When you complete your mission, a pathway to the next level will appear"
                 .rotation(-self.player.transform.angle),
         )?;
 
-        sprite_component::render_sprite(
-            ctx,
-            quad_ctx,
-            &self.target.get_curr_animation_frame(),
-            DrawParam::default()
-                .dest(self.camera.world_position(self.target.transform.position))
-                .rotation(-self.target.transform.angle),
-        )?;
+        if self.camera.contains(&self.target.aabb) {
+            sprite_component::render_sprite(
+                ctx,
+                quad_ctx,
+                &self.target.get_curr_animation_frame(),
+                DrawParam::default()
+                    .dest(self.camera.world_position(self.target.transform.position))
+                    .rotation(-self.target.transform.angle),
+            )?;
+            n_objects_drawn += 1;
+        }
 
-        self.guards
+        n_objects_drawn += self
+            .guards
             .iter()
+            .filter(|guard| self.camera.contains(&guard.aabb))
             .map(|guard| {
                 sprite_component::render_sprite(
                     ctx,
@@ -509,8 +519,10 @@ When you complete your mission, a pathway to the next level will appear"
                 .count();
         }
 
-        self.walls
+        n_objects_drawn += self
+            .walls
             .iter()
+            .filter(|wall| self.camera.contains(&wall.aabb))
             .map(|wall| {
                 sprite_component::render(
                     ctx,
@@ -620,17 +632,8 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::draw(
                 ctx,
                 quad_ctx,
-                &util::make_text(format!("is_target_dead: {}", self.target.is_dead), 24.),
-                DrawParam::from((glam::vec2(4., 32.),)),
-            )?;
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &util::make_text(
-                    format!("camera_center: {}", self.camera.center.position),
-                    24.,
-                ),
-                DrawParam::from((glam::vec2(4., 64.),)),
+                &util::make_text(format!("{} / {}", n_objects_drawn, self.n_objects), 24.),
+                DrawParam::from((glam::vec2(8., 40.),)),
             )?;
         }
 
@@ -806,6 +809,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     {
                         if new_game_state == GameState::Game {
                             level::load_level(ctx, quad_ctx, self, self.level_idx, true);
+                            self.n_objects = 1 + self.guards.len() + self.walls.len();
+
                             self.game_state = GameState::LevelAnimation;
                             self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
                         } else {

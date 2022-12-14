@@ -1,3 +1,4 @@
+use crate::collision_component::AABBCollisionComponent;
 use crate::constants;
 use crate::transform_component::TransformComponent;
 use crate::util;
@@ -48,6 +49,17 @@ impl CameraComponent {
     #[inline]
     pub fn world_position(&self, global_pos: glam::Vec2) -> glam::Vec2 {
         global_pos - self.center.position + self.size
+    }
+
+    pub fn contains(&self, object: &AABBCollisionComponent) -> bool {
+        let camera_aabb = ggez::graphics::Rect::new(
+            self.center.position.x - self.size.x,
+            self.center.position.y - self.size.y,
+            self.size.x * 2.,
+            self.size.y * 2.,
+        );
+
+        camera_aabb.overlaps(&object.rect)
     }
 }
 
