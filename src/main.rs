@@ -539,21 +539,22 @@ When you complete your mission, a pathway to the next level will appear"
         )
         .unwrap();
 
-        sprite_component::render_mesh(
-            ctx,
-            quad_ctx,
-            &self.mouse_input_handler.touch_area,
-            DrawParam::default(),
-        )
-        .unwrap();
-
-        sprite_component::render_mesh(
-            ctx,
-            quad_ctx,
-            &self.mouse_input_handler.direction_circle,
-            DrawParam::default().offset(-self.mouse_input_handler.direction_offset),
-        )
-        .unwrap();
+        // TODO: Only draw this when input is pressed
+        // Draw touch input
+        // sprite_component::render_mesh(
+        //     ctx,
+        //     quad_ctx,
+        //     &self.mouse_input_handler.touch_area,
+        //     DrawParam::default(),
+        // )
+        // .unwrap();
+        // sprite_component::render_mesh(
+        //     ctx,
+        //     quad_ctx,
+        //     &self.mouse_input_handler.direction_circle,
+        //     DrawParam::default().offset(-self.mouse_input_handler.direction_offset),
+        // )
+        // .unwrap();
 
         if self.target.is_dead {
             sprite_component::render_sprite(

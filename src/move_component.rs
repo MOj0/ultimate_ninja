@@ -13,7 +13,7 @@ impl MoveComponent {
 
     #[inline]
     pub fn set_direction(&mut self, direction: glam::Vec2) {
-        self.direction = direction
+        self.direction = direction;
     }
 
     pub fn set_direction_normalized(&mut self, direction: glam::Vec2) {

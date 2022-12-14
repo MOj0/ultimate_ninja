@@ -14,6 +14,7 @@ use crate::GameState;
 use quad_rand as qrand;
 
 pub struct Guard {
+    pub guard_state: GuardState,
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
     pub move_component: MoveComponent,
@@ -26,6 +27,13 @@ pub struct Guard {
     pub look_color: ggez::graphics::Color,
 }
 
+#[derive(PartialEq)]
+pub enum GuardState {
+    Lookout(f32),
+    Walk,
+    Alert,
+}
+
 impl Guard {
     pub fn new(
         ctx: &mut ggez::Context,
@@ -35,6 +43,7 @@ impl Guard {
         color: ggez::graphics::Color,
     ) -> Self {
         Self {
+            guard_state: GuardState::Walk,
             transform: TransformComponent::new(position, constants::ENTITY_SIZE),
             animation: util::build_walk_animation(
                 &assets,
@@ -88,42 +97,58 @@ impl Guard {
     pub fn calculate_move_dir(&self) -> glam::Vec2 {
         let dx = 2. * constants::GUARD_FOV / self.look.ray_scales.len() as f32;
 
-        let max_ray_scale = self
+        let (idx, max_ray) = self
             .look
             .ray_scales
             .iter()
             .enumerate()
             .map(|(i, v)| (i, (*v * 100.) as i32))
-            .max_by(|(_, a), (_, b)| a.cmp(b));
+            .max_by(|(_, a), (_, b)| a.cmp(b))
+            .unwrap_or_default();
 
-        if let Some((idx, max_ray)) = max_ray_scale {
-            if max_ray < 60 {
-                // Rotate 180 deg
-                return util::vec_from_angle(self.transform.angle + constants::PI);
-            }
-            if max_ray < 100 {
-                // Rotate 90 deg
-                return util::vec_from_angle(
-                    self.transform.angle + (qrand::gen_range::<f32>(0., 1.)) * constants::PI / 2.,
-                );
-            }
+        if max_ray < 60 {
+            // Rotate 180 deg
+            return util::vec_from_angle(self.transform.angle + constants::PI);
+        }
+        if max_ray < 100 {
+            // Rotate 90 deg
+            return util::vec_from_angle(
+                self.transform.angle + (qrand::gen_range::<f32>(0., 1.)) * constants::PI / 2.,
+            );
+        }
+
+        if self.guard_state == GuardState::Alert {
             return util::vec_from_angle(
                 self.transform.angle - constants::GUARD_FOV + idx as f32 * dx, // Go in the direction of the max_ray
             );
         }
 
-        // Go in random direction
-        return util::vec_from_angle(qrand::gen_range::<f32>(0., 1.) * constants::PI * 2.);
+        // GuardState == Walk
+        util::vec_from_angle(
+            self.transform.angle + qrand::gen_range::<f32>(-1., 1.) * constants::PI / 3.,
+        )
     }
 
     pub fn update(&mut self, dt: f32) {
         if self.move_interval <= 0. {
-            self.move_component.set_direction_normalized(self.move_dir);
+            if self.guard_state == GuardState::Walk && qrand::gen_range(1., 100.) <= 3. {
+                let lookout_speed = qrand::gen_range(0.5, 0.9)
+                    * (qrand::gen_range(-2, 1) >= 0).then_some(1.).unwrap_or(-1.);
 
-            self.move_dir = self.calculate_move_dir();
+                self.guard_state = GuardState::Lookout(lookout_speed);
+                self.move_interval = qrand::gen_range(3., 5.);
+            } else {
+                if self.guard_state != GuardState::Alert {
+                    self.guard_state = GuardState::Walk;
+                }
 
-            self.max_move_interval = qrand::gen_range::<f32>(0.1, 0.4);
-            self.move_interval = self.max_move_interval;
+                self.move_component.set_direction_normalized(self.move_dir);
+
+                self.move_dir = self.calculate_move_dir();
+
+                self.max_move_interval = qrand::gen_range::<f32>(0.2, 0.4);
+                self.move_interval = self.max_move_interval;
+            }
         } else {
             let lerped_dir = util::vec_lerp(
                 self.move_component.direction,
@@ -133,6 +158,18 @@ impl Guard {
 
             self.move_component.set_direction_normalized(lerped_dir);
         }
+
+        match self.guard_state {
+            GuardState::Lookout(lookout_speed) => {
+                let lookout_dir = util::vec_from_angle(self.transform.angle + dt * lookout_speed);
+
+                self.set_speed(0.);
+                self.move_dir = lookout_dir;
+                self.move_component.set_direction(lookout_dir);
+            }
+            GuardState::Walk => self.set_speed(constants::GUARD_SPEED),
+            GuardState::Alert => self.set_speed(constants::GUARD_SPEED_FAST),
+        };
 
         self.look.look_at = self.move_component.direction;
         self.set_angle(self.move_component.direction);
@@ -147,7 +184,7 @@ impl Guard {
 
         self.animation.update(dt);
 
-        if self.move_component.direction.length_squared() == 0. {
+        if self.move_component.speed == 0. {
             self.animation.set_animation_state(AnimationState::Idle);
         } else {
             self.animation.set_animation_state(AnimationState::Active);
@@ -178,7 +215,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         )
     {
         game_state.guards.iter_mut().for_each(|guard| {
-            guard.set_speed(constants::GUARD_SPEED_FAST);
+            guard.guard_state = GuardState::Alert;
             guard.set_look_color(ggez::graphics::Color::RED);
         });
 
