@@ -1,6 +1,7 @@
 use crate::constants;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
+use crate::util;
 use crate::Game;
 
 pub struct Exit {
@@ -13,7 +14,11 @@ pub struct Exit {
 impl Exit {
     pub fn new(position: glam::Vec2, sprite: SpriteComponent) -> Self {
         Self {
-            transform: TransformComponent::new(position, constants::ENTITY_SIZE),
+            transform: TransformComponent::new(
+                position,
+                constants::ENTITY_SIZE,
+                util::compute_grid_index(&position),
+            ),
             sprite,
             scale_rotation_counter: 0.,
             player_exited: false,

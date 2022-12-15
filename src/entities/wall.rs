@@ -4,6 +4,7 @@ use crate::entities;
 use crate::move_component::MoveComponent;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
+use crate::util;
 use crate::Game;
 
 pub struct Wall {
@@ -16,7 +17,11 @@ pub struct Wall {
 impl Wall {
     pub fn new(position: glam::Vec2, width: f32, height: f32, sprite: SpriteComponent) -> Self {
         Self {
-            transform: TransformComponent::new(position, width * height),
+            transform: TransformComponent::new(
+                position,
+                width * height,
+                util::compute_grid_index(&position),
+            ),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x, position.y, width, height,
             )),
@@ -54,13 +59,23 @@ fn get_colliding_vec_components_all(
 ) -> (bool, bool) {
     let rect_of_next_move = &entities::get_rect_of_next_move(transform, move_component, aabb);
 
-    walls.iter().fold((false, false), |init, wall| {
-        let collding_vec_components = wall.get_colliding_vec_components(aabb, rect_of_next_move);
-        (
-            init.0 || collding_vec_components.0,
-            init.1 || collding_vec_components.1,
-        )
-    })
+    // Filter to only those walls which are neighbouring and compute collision ONLY for them
+    walls
+        .iter()
+        .filter(|wall| {
+            let abs_diff = (wall.transform.grid_index - transform.grid_index).abs();
+            abs_diff <= 1
+                || abs_diff
+                    == (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize
+        })
+        .fold((false, false), |init, wall| {
+            let collding_vec_components =
+                wall.get_colliding_vec_components(aabb, rect_of_next_move);
+            (
+                init.0 || collding_vec_components.0,
+                init.1 || collding_vec_components.1,
+            )
+        })
 }
 
 pub fn check_collision(game_state: &mut Game) {

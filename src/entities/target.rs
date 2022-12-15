@@ -29,7 +29,11 @@ pub struct Target {
 impl Target {
     pub fn new(position: glam::Vec2, assets: &Assets, color: ggez::graphics::Color) -> Self {
         Self {
-            transform: TransformComponent::new(position, constants::ENTITY_SIZE),
+            transform: TransformComponent::new(
+                position,
+                constants::ENTITY_SIZE,
+                util::compute_grid_index(&position),
+            ),
             animation: util::build_walk_animation(
                 &assets,
                 util::compute_animation_duration(constants::TARGET_SPEED),

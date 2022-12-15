@@ -2,12 +2,14 @@
 // pub const HEIGHT: u32 = 768;
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
-pub const GRID_SIZE: u32 = 40; // size 40 produces 20x15 grid (at 800x600)
+pub const LEVEL_BLOCK_SIZE: u32 = 40; // size 40 produces 20x15 grid (at 800x600)
 
-/// Numer of characters in level text files
+pub const GRID_CELL_SIZE: usize = 5 * LEVEL_BLOCK_SIZE as usize;
+
+/// Number of characters in level text files
 pub const LEVEL_SIZE: (u32, u32) = (30, 20);
-pub const MAX_WORLD_X: u32 = GRID_SIZE * LEVEL_SIZE.0;
-pub const MAX_WORLD_Y: u32 = GRID_SIZE * LEVEL_SIZE.1;
+pub const MAX_WORLD_X: u32 = LEVEL_BLOCK_SIZE * LEVEL_SIZE.0;
+pub const MAX_WORLD_Y: u32 = LEVEL_BLOCK_SIZE * LEVEL_SIZE.1;
 
 pub const BG_COLOR: ggez::graphics::Color = ggez::graphics::Color::new(0.125, 0.125, 0.125, 0.5);
 

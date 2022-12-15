@@ -48,10 +48,10 @@ pub fn load_level(
     let (mut x, mut y): (i32, i32) = (0, 0);
     for char in level.chars() {
         let position = glam::vec2(
-            (x as u32 * constants::GRID_SIZE) as f32,
-            (y as u32 * constants::GRID_SIZE) as f32,
+            (x as u32 * constants::LEVEL_BLOCK_SIZE) as f32,
+            (y as u32 * constants::LEVEL_BLOCK_SIZE) as f32,
         );
-        let position_center = position + glam::Vec2::splat(constants::GRID_SIZE as f32 / 2.);
+        let position_center = position + glam::Vec2::splat(constants::LEVEL_BLOCK_SIZE as f32 / 2.);
 
         match char {
             'p' => {
@@ -80,20 +80,20 @@ pub fn load_level(
             )),
             'x' => game_state.walls.push(Wall::new(
                 position,
-                constants::GRID_SIZE as f32,
-                constants::GRID_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
                 SpriteComponent::new(assets.wall.clone(), ggez::graphics::Color::WHITE),
             )),
             'b' => game_state.walls.push(Wall::new(
                 position,
-                constants::GRID_SIZE as f32,
-                constants::GRID_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
                 SpriteComponent::new(assets.box1.clone(), ggez::graphics::Color::WHITE),
             )),
             'B' => game_state.walls.push(Wall::new(
                 position,
-                constants::GRID_SIZE as f32,
-                constants::GRID_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
                 SpriteComponent::new(assets.box2.clone(), ggez::graphics::Color::WHITE),
             )),
             'e' => {

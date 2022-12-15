@@ -314,3 +314,10 @@ pub fn rect_contains_point(rect_dim: glam::Vec2, rect_pos: glam::Vec2, point: gl
 pub fn clamp(v: f32, min: f32, max: f32) -> f32 {
     v.min(max).max(min)
 }
+
+pub fn compute_grid_index(position: &glam::Vec2) -> isize {
+    let x = position.x as usize / constants::GRID_CELL_SIZE;
+    let y = position.y as usize / constants::GRID_CELL_SIZE;
+
+    (x + y * constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize
+}

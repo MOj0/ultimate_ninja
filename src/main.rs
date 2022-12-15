@@ -56,6 +56,7 @@ pub struct Game {
     dead_target_detected: bool,
     debug_draw: bool,
     menu_rectangle: graphics::Mesh,
+    grid_line: graphics::Mesh,
     n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
@@ -68,7 +69,11 @@ impl Game {
         let assets = Assets::load(ctx, quad_ctx);
 
         let camera = camera_component::CameraComponent::new(
-            TransformComponent::new(glam::Vec2::ZERO, 0.),
+            TransformComponent::new(
+                glam::Vec2::ZERO,
+                0.,
+                util::compute_grid_index(&glam::Vec2::ZERO),
+            ),
             glam::vec2(
                 (constants::WIDTH / 2) as f32,
                 (constants::HEIGHT / 2) as f32,
@@ -175,6 +180,21 @@ impl Game {
         )
         .unwrap();
 
+        let grid_line = graphics::Mesh::new_line(
+            ctx,
+            quad_ctx,
+            &[
+                glam::vec2(0., 0.),
+                glam::vec2(
+                    constants::MAX_WORLD_X.max(constants::MAX_WORLD_Y) as f32,
+                    0.,
+                ),
+            ],
+            2.,
+            graphics::Color::new(0.85, 0.85, 0.85, 0.75),
+        )
+        .unwrap();
+
         let game_state = Game {
             game_state,
             assets,
@@ -192,6 +212,7 @@ impl Game {
             dead_target_detected: false,
             debug_draw: false,
             menu_rectangle,
+            grid_line,
             n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
@@ -635,6 +656,35 @@ When you complete your mission, a pathway to the next level will appear"
                 &util::make_text(format!("{} / {}", n_objects_drawn, self.n_objects), 24.),
                 DrawParam::from((glam::vec2(8., 40.),)),
             )?;
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(
+                    format!("player grid index: {}", self.player.transform.grid_index),
+                    24.,
+                ),
+                DrawParam::from((glam::vec2(8., 80.),)),
+            )?;
+
+            // Draw grid
+            for x in (0..=constants::MAX_WORLD_X).step_by(constants::GRID_CELL_SIZE) {
+                sprite_component::render_mesh(
+                    ctx,
+                    quad_ctx,
+                    &self.grid_line,
+                    DrawParam::default()
+                        .dest(self.camera.world_position(glam::vec2(x as f32, 0.)))
+                        .rotation(constants::PI / 2.),
+                )?;
+            }
+            for y in (0..=constants::MAX_WORLD_Y).step_by(constants::GRID_CELL_SIZE) {
+                sprite_component::render_mesh(
+                    ctx,
+                    quad_ctx,
+                    &self.grid_line,
+                    DrawParam::default().dest(self.camera.world_position(glam::vec2(0., y as f32))),
+                )?;
+            }
         }
 
         Ok(())
@@ -808,11 +858,15 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                             .handle_menu_pressed(&self.game_state, x, y)
                     {
                         if new_game_state == GameState::Game {
-                            level::load_level(ctx, quad_ctx, self, self.level_idx, true);
+                            let is_game_over = self.game_state == GameState::GameOver;
+
+                            level::load_level(ctx, quad_ctx, self, self.level_idx, !is_game_over);
                             self.n_objects = 1 + self.guards.len() + self.walls.len();
 
-                            self.game_state = GameState::LevelAnimation;
-                            self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
+                            if !is_game_over {
+                                self.game_state = GameState::LevelAnimation;
+                                self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
+                            }
                         } else {
                             self.game_state = new_game_state;
                         }
