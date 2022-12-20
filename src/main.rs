@@ -29,10 +29,15 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics, Context, GameResult};
 
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
 #[derive(PartialEq)]
 pub enum GameState {
     Menu,
     Info,
+    Leaderboard,
+    SubmitTime,
     Game,
     LevelAnimation,
     GameOver,
@@ -60,6 +65,8 @@ pub struct Game {
     n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
+    leaderboard: Option<Vec<PlayerEntry>>,
+    player_name: String,
 }
 
 impl Game {
@@ -216,6 +223,8 @@ impl Game {
             n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
+            leaderboard: None,
+            player_name: String::new(),
         };
 
         game_state
@@ -242,6 +251,8 @@ impl Game {
         if is_proceed {
             self.curr_level_time = 0.;
         }
+
+        self.leaderboard = None;
     }
 
     fn next_level(
@@ -309,7 +320,7 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Play".into(), 36.),
-            graphics::DrawParam::default().dest(glam::vec2(610., 270.)),
+            graphics::DrawParam::default().dest(constants::MENU_PLAY_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
@@ -322,7 +333,21 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Info".into(), 36.),
-            graphics::DrawParam::default().dest(glam::vec2(610., 420.)),
+            graphics::DrawParam::default().dest(constants::MENU_INFO_POS + glam::vec2(80., 20.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_LEADERBOARD_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Leaderboard".into(), 36.),
+            graphics::DrawParam::default()
+                .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(25., 20.)),
         )?;
 
         Ok(())
@@ -350,7 +375,7 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(glam::vec2(90., 50.)),
+            graphics::DrawParam::default().dest(constants::MENU_BACK_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
@@ -358,8 +383,8 @@ impl Game {
             quad_ctx,
             &self.menu_rectangle,
             graphics::DrawParam::default()
-                .dest(glam::vec2(50., 250.))
-                .scale(glam::vec2(3.7, 4.1)),
+                .dest(glam::vec2(30., 250.))
+                .scale(glam::vec2(3., 4.1)),
         )?;
         graphics::draw(
             ctx,
@@ -382,6 +407,65 @@ When you complete your mission, a pathway to the next level will appear"
         Ok(())
     }
 
+    fn draw_leaderboard(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Leaderboard".into(), 42.),
+            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_BACK_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Back".into(), 36.),
+            graphics::DrawParam::default().dest(constants::MENU_BACK_POS + glam::vec2(80., 20.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default()
+                .dest(glam::vec2(30., 250.))
+                .scale(glam::vec2(3., 4.1)),
+        )?;
+
+        if self.curr_level_time >= constants::LEADERBOARD_WAIT_TIME && self.leaderboard.is_none() {
+            self.leaderboard = Some(get_leaderboard());
+        }
+
+        let leaderboard_str = if let Some(leaderboard) = &self.leaderboard {
+            leaderboard
+                .iter()
+                .map(|entry| entry.to_string() + "\n\n")
+                .collect()
+        } else {
+            "Requesting leaderboard...".to_owned()
+        };
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(leaderboard_str, 18.),
+            graphics::DrawParam::default().dest(glam::vec2(80., 270.)),
+        )?;
+
+        self.curr_level_time += ggez::timer::delta(ctx).as_secs_f32();
+
+        Ok(())
+    }
+
     fn draw_end_screen(
         &self,
         ctx: &mut Context,
@@ -397,10 +481,31 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text("Menu".into(), 36.),
-            graphics::DrawParam::default().dest(glam::vec2(350., 530.)),
+            graphics::DrawParam::default().dest(constants::MENU_OK_POS + glam::vec2(80., 20.)),
         )?;
 
-        let level_times = (0..level::LEVEL_COUNT)
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default().dest(constants::MENU_LEADERBOARD_POS),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Submit".into(), 36.),
+            graphics::DrawParam::default()
+                .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(65., 20.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(format!("Your name: {}", self.player_name), 36.),
+            graphics::DrawParam::default().dest(glam::vec2(200., 300.)),
+        )?;
+
+        let level_times_str = (0..level::LEVEL_COUNT)
             .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx + 1, self.level_times[lvl_idx]))
             .reduce(|acc, itm| acc + &itm)
             .unwrap();
@@ -410,7 +515,7 @@ When you complete your mission, a pathway to the next level will appear"
         graphics::draw(
             ctx,
             quad_ctx,
-            &util::make_text(level_times, 24.),
+            &util::make_text(level_times_str, 24.),
             graphics::DrawParam::default().dest(glam::vec2(250., 20.)),
         )?;
 
@@ -699,6 +804,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
     ) -> Result<(), ggez::GameError> {
         if self.game_state == GameState::Menu
             || self.game_state == GameState::Info
+            || self.game_state == GameState::Leaderboard
             || self.game_state == GameState::GameOver
         {
             return Ok(());
@@ -752,6 +858,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         if self.game_state == GameState::Info {
             return self.draw_info(ctx, quad_ctx);
+        }
+
+        if self.game_state == GameState::Leaderboard {
+            return self.draw_leaderboard(ctx, quad_ctx);
         }
 
         if self.game_state == GameState::EndScreen {
@@ -836,6 +946,17 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         }
     }
 
+    fn text_input_event(
+        &mut self,
+        _ctx: &mut Context,
+        _quad_ctx: &mut miniquad::Context,
+        character: char,
+    ) {
+        if self.game_state == GameState::EndScreen {
+            self.player_name.push(character);
+        }
+    }
+
     fn mouse_button_down_event(
         &mut self,
         ctx: &mut Context,
@@ -850,6 +971,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                 if self.game_state == GameState::Menu
                     || self.game_state == GameState::Info
+                    || self.game_state == GameState::Leaderboard
                     || self.game_state == GameState::GameOver
                     || self.game_state == GameState::EndScreen
                 {
@@ -869,6 +991,15 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                             }
                         } else {
                             self.game_state = new_game_state;
+                            self.curr_level_time = 0.;
+                        }
+
+                        if self.game_state == GameState::SubmitTime {
+                            let total_time = self.level_times.iter().sum::<f32>();
+                            submit_time(self.player_name.clone(), total_time);
+
+                            self.player_name = String::new();
+                            self.game_state = GameState::Leaderboard;
                         }
                     }
 
@@ -944,4 +1075,52 @@ fn main() -> GameResult {
     ggez::start(conf, |mut context, mut quad_ctx| {
         Box::new(Game::new(&mut context, &mut quad_ctx))
     })
+}
+
+#[derive(Serialize, Deserialize)]
+struct PlayerEntry {
+    username: String,
+    time: f32,
+}
+
+impl fmt::Display for PlayerEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.username, self.time)
+    }
+}
+
+#[tokio::main]
+async fn get_leaderboard() -> Vec<PlayerEntry> {
+    let api_key = "bzkOp6qOAmopVFZhty69SSyB7OqTRDu1IqTs7TlLuBDeja7cDPGSaB0gL6c1IpBK";
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get("https://data.mongodb-api.com/app/data-mjiob/endpoint/get")
+        .header("api-key", api_key)
+        .send()
+        .await
+        .unwrap();
+    let response_str = response.text().await.unwrap();
+
+    let mut leaderboard: Vec<PlayerEntry> = serde_json::from_str(&response_str).unwrap();
+    leaderboard.sort_by(|a, b| a.time.total_cmp(&b.time));
+
+    leaderboard
+}
+
+#[tokio::main]
+async fn submit_time(username: String, time: f32) {
+    let api_key = "bzkOp6qOAmopVFZhty69SSyB7OqTRDu1IqTs7TlLuBDeja7cDPGSaB0gL6c1IpBK";
+    let client = reqwest::Client::new();
+    let new_entry = PlayerEntry { username, time };
+
+    let response = client
+        .put("https://data.mongodb-api.com/app/data-mjiob/endpoint/put")
+        .header("api-key", api_key)
+        .json(&new_entry)
+        .send()
+        .await
+        .unwrap();
+
+    println!("{}", response.text().await.unwrap());
 }

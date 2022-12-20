@@ -85,9 +85,17 @@ impl MouseInputHandler {
             ) {
                 return Some(GameState::Info);
             }
+
+            if util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_LEADERBOARD_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Leaderboard);
+            }
         }
 
-        if *game_state == GameState::Info {
+        if *game_state == GameState::Info || *game_state == GameState::Leaderboard {
             if util::rect_contains_point(
                 constants::MENU_RECT_DIM,
                 constants::MENU_BACK_POS,
@@ -109,6 +117,17 @@ impl MouseInputHandler {
                     return Some(GameState::Menu);
                 }
             }
+        }
+
+        // Submit button
+        if *game_state == GameState::EndScreen
+            && util::rect_contains_point(
+                constants::MENU_RECT_DIM,
+                constants::MENU_LEADERBOARD_POS,
+                mouse_vec,
+            )
+        {
+            return Some(GameState::SubmitTime);
         }
 
         return None;

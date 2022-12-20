@@ -10,3 +10,7 @@ good-web-game = "0.6.0"
 glam = {version="0.21.3", features=["mint"]}
 quad-rand = "0.2.1"
 lyon_geom = "1.0.1"
+reqwest = { version = "0.11.13", features = ["json"] }
+tokio = { version = "1.23.0", features = ["full"] }
+serde = { version = "1.0.151", features = ["derive"] }
+serde_json = "1.0.91"
