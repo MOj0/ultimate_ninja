@@ -1127,8 +1127,8 @@ async fn get_leaderboard() -> Vec<PlayerEntry> {
     let response_str = response.text().await.unwrap();
 
     let mut leaderboard: Vec<PlayerEntry> = serde_json::from_str(&response_str).unwrap();
-    leaderboard.truncate(9); // Only display 9 entries
     leaderboard.sort_by(|a, b| a.time.total_cmp(&b.time));
+    leaderboard.truncate(9); // Only display 9 entries
 
     leaderboard
 }
