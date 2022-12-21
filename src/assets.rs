@@ -19,6 +19,8 @@ pub struct Assets {
 
     pub teleport: graphics::Image,
     pub exit: graphics::Image,
+
+    pub ultimate_ninja: graphics::Image,
 }
 
 impl Assets {
@@ -42,6 +44,9 @@ impl Assets {
         let teleport = graphics::Image::new(ctx, quad_ctx, "textures/oni.png").unwrap();
         let exit = graphics::Image::new(ctx, quad_ctx, "textures/exit.png").unwrap();
 
+        let ultimate_ninja =
+            graphics::Image::new(ctx, quad_ctx, "textures/ultimate_ninja.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -61,6 +66,8 @@ impl Assets {
 
             teleport,
             exit,
+
+            ultimate_ninja,
         }
     }
 }

@@ -350,6 +350,13 @@ impl Game {
                 .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(25., 20.)),
         )?;
 
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.assets.ultimate_ninja,
+            graphics::DrawParam::default().dest(glam::vec2(150., 200.)),
+        )?;
+
         Ok(())
     }
 
@@ -416,7 +423,7 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text("Leaderboard".into(), 42.),
-            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+            graphics::DrawParam::default().dest(glam::vec2(280., 50.)),
         )?;
 
         graphics::draw(
@@ -438,7 +445,7 @@ When you complete your mission, a pathway to the next level will appear"
             &self.menu_rectangle,
             graphics::DrawParam::default()
                 .dest(glam::vec2(30., 250.))
-                .scale(glam::vec2(3., 4.1)),
+                .scale(glam::vec2(3., 4.55)),
         )?;
 
         if self.curr_level_time >= constants::LEADERBOARD_WAIT_TIME && self.leaderboard.is_none() {
@@ -498,19 +505,10 @@ When you complete your mission, a pathway to the next level will appear"
                 .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(65., 20.)),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text(format!("Your name: {}", self.player_name), 36.),
-            graphics::DrawParam::default().dest(glam::vec2(200., 300.)),
-        )?;
-
         let level_times_str = (0..level::LEVEL_COUNT)
             .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx + 1, self.level_times[lvl_idx]))
             .reduce(|acc, itm| acc + &itm)
             .unwrap();
-
-        let total_time = self.level_times.iter().sum::<f32>();
 
         graphics::draw(
             ctx,
@@ -519,13 +517,35 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::DrawParam::default().dest(glam::vec2(250., 20.)),
         )?;
 
+        let total_time = self.level_times.iter().sum::<f32>();
         graphics::draw(
             ctx,
             quad_ctx,
-            &util::make_text(format!("Total time: {:.3}", total_time), 24.),
-            graphics::DrawParam::default().dest(glam::vec2(250., 450.)),
+            &util::make_text(format!("Total time: {:.3}", total_time), 32.),
+            graphics::DrawParam::default().dest(glam::vec2(225., 250.)),
         )?;
 
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Enter username:".into(), 32.),
+            graphics::DrawParam::default().dest(glam::vec2(200., 300.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_rectangle,
+            graphics::DrawParam::default()
+                .dest(glam::vec2(200., 340.))
+                .scale(glam::vec2(2., 1.)),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(format!("{}", self.player_name), 32.),
+            graphics::DrawParam::default().dest(glam::vec2(215., 360.)),
+        )?;
         Ok(())
     }
 
@@ -915,6 +935,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::B => self.debug_draw = !self.debug_draw,
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             _ => (),
+        };
+
+        if self.game_state == GameState::EndScreen && keycode == KeyCode::Backspace {
+            self.player_name.pop();
         }
     }
 
@@ -952,7 +976,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         _quad_ctx: &mut miniquad::Context,
         character: char,
     ) {
-        if self.game_state == GameState::EndScreen {
+        if self.game_state == GameState::EndScreen && self.player_name.len() < 28 {
             self.player_name.push(character);
         }
     }
@@ -1103,6 +1127,7 @@ async fn get_leaderboard() -> Vec<PlayerEntry> {
     let response_str = response.text().await.unwrap();
 
     let mut leaderboard: Vec<PlayerEntry> = serde_json::from_str(&response_str).unwrap();
+    leaderboard.truncate(9); // Only display 9 entries
     leaderboard.sort_by(|a, b| a.time.total_cmp(&b.time));
 
     leaderboard
