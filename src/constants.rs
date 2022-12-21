@@ -46,7 +46,8 @@ pub const MENU_PLAY_POS: glam::Vec2 = glam::vec2(450., 200.);
 pub const MENU_INFO_POS: glam::Vec2 = glam::vec2(450., 350.);
 pub const MENU_LEADERBOARD_POS: glam::Vec2 = glam::vec2(450., 500.);
 pub const MENU_BACK_POS: glam::Vec2 = glam::vec2(30., 120.);
-pub const MENU_OK_POS: glam::Vec2 = glam::vec2(100., 500.);
+pub const MENU_GAME_POS: glam::Vec2 = glam::vec2(100., 500.);
+pub const BUTTON_CENTER_POS: glam::Vec2 = glam::vec2(330., 500.);
 
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
 

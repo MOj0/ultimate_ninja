@@ -482,13 +482,13 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_OK_POS),
+            graphics::DrawParam::default().dest(constants::MENU_GAME_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Menu".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_OK_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(constants::MENU_GAME_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
@@ -753,7 +753,7 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &self.menu_rectangle,
                 graphics::DrawParam::default()
-                    .dest(constants::MENU_OK_POS)
+                    .dest(constants::BUTTON_CENTER_POS)
                     .color(graphics::Color::BLACK),
             )
             .unwrap();

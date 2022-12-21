@@ -77,8 +77,7 @@ impl LookComponent {
         view_distance: f32,
         n_rays: u32,
     ) -> Vec<glam::Vec2> {
-        let top_left = glam::vec2(0., 0.);
-        let line_of_sight = top_left + look_at * view_distance;
+        let line_of_sight = look_at * view_distance;
 
         let delta = 2.0 * fov / n_rays as f32;
         let (start, end) = (
@@ -89,7 +88,7 @@ impl LookComponent {
         (start..=end)
             .map(|i| {
                 let ray_rotation = i as f32 * delta;
-                util::rotate_point_around_center(line_of_sight, top_left, ray_rotation)
+                util::rotate_point_around_center(line_of_sight, glam::vec2(0., 0.), ray_rotation)
             })
             .collect()
     }
@@ -99,12 +98,10 @@ impl LookComponent {
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         rays: &Vec<glam::Vec2>,
     ) -> Vec<ggez::graphics::Mesh> {
-        let top_left = glam::vec2(0., 0.);
-
         return rays
             .windows(2)
             .map(|fov_rays| {
-                let fov_points = vec![top_left, fov_rays[0], fov_rays[1]];
+                let fov_points = vec![glam::vec2(0., 0.), fov_rays[0], fov_rays[1]];
 
                 ggez::graphics::Mesh::new_polygon(
                     ctx,

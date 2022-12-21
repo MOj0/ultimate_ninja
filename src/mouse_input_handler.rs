@@ -108,7 +108,7 @@ impl MouseInputHandler {
         if *game_state == GameState::GameOver || *game_state == GameState::EndScreen {
             if util::rect_contains_point(
                 constants::MENU_RECT_DIM,
-                constants::MENU_OK_POS,
+                constants::BUTTON_CENTER_POS,
                 mouse_vec,
             ) {
                 if *game_state == GameState::GameOver {
