@@ -39,6 +39,7 @@ pub enum GameState {
     Leaderboard,
     SubmitTime,
     Game,
+    Pause,
     LevelAnimation,
     GameOver,
     EndScreen,
@@ -176,12 +177,7 @@ impl Game {
             ctx,
             quad_ctx,
             graphics::DrawMode::fill(),
-            graphics::Rect::new(
-                0.,
-                0.,
-                constants::MENU_RECT_DIM.x,
-                constants::MENU_RECT_DIM.y,
-            ),
+            graphics::Rect::new(0., 0., constants::BTN_DIM.x, constants::BTN_DIM.y),
             10.,
             graphics::Color::new(0.25, 0.25, 0.25, 0.6),
         )
@@ -314,40 +310,40 @@ impl Game {
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_PLAY_POS),
+            graphics::DrawParam::default().dest(constants::BTN_PLAY_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Play".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_PLAY_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(constants::BTN_PLAY_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_INFO_POS),
+            graphics::DrawParam::default().dest(constants::BTN_INFO_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Info".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_INFO_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(constants::BTN_INFO_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_LEADERBOARD_POS),
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Leaderboard".into(), 36.),
             graphics::DrawParam::default()
-                .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(25., 20.)),
+                .dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(25., 20.)),
         )?;
 
         graphics::draw(
@@ -376,13 +372,13 @@ impl Game {
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_BACK_POS),
+            graphics::DrawParam::default().dest(constants::BTN_BACK_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_BACK_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(constants::BTN_BACK_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
@@ -430,13 +426,13 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_BACK_POS),
+            graphics::DrawParam::default().dest(constants::BTN_BACK_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_BACK_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(constants::BTN_BACK_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
@@ -482,27 +478,28 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_GAME_POS),
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Menu".into(), 36.),
-            graphics::DrawParam::default().dest(constants::MENU_GAME_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default()
+                .dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(80., 20.)),
         )?;
 
         graphics::draw(
             ctx,
             quad_ctx,
             &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::MENU_LEADERBOARD_POS),
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Submit".into(), 36.),
             graphics::DrawParam::default()
-                .dest(constants::MENU_LEADERBOARD_POS + glam::vec2(65., 20.)),
+                .dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(65., 20.)),
         )?;
 
         let level_times_str = (0..level::LEVEL_COUNT)
@@ -741,7 +738,7 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::draw(
                 ctx,
                 quad_ctx,
-                &util::make_text(format!("Game over"), 32.),
+                &util::make_text(format!("Game Over"), 32.),
                 DrawParam::default()
                     .dest(glam::vec2(350., 270.))
                     .color(graphics::Color::RED),
@@ -753,7 +750,41 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &self.menu_rectangle,
                 graphics::DrawParam::default()
-                    .dest(constants::BUTTON_CENTER_POS)
+                    .dest(constants::BTN_BOTTOM_LEFT_POS)
+                    .color(graphics::Color::BLACK),
+            )
+            .unwrap();
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Menu"), 32.),
+                DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(35., 20.)),
+            )
+            .unwrap();
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_RIGHT_POS)
+                    .color(graphics::Color::BLACK),
+            )
+            .unwrap();
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Restart"), 32.),
+                DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(35., 20.)),
+            )
+            .unwrap();
+        } else if self.game_state == GameState::Pause {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(glam::vec2(320., 250.))
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
@@ -761,8 +792,44 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::draw(
                 ctx,
                 quad_ctx,
+                &util::make_text(format!("Pause"), 32.),
+                DrawParam::default()
+                    .dest(glam::vec2(370., 270.))
+                    .color(graphics::Color::WHITE),
+            )
+            .unwrap();
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_LEFT_POS)
+                    .color(graphics::Color::BLACK),
+            )
+            .unwrap();
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &util::make_text(format!("Menu"), 32.),
+                DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(35., 20.)),
+            )
+            .unwrap();
+
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_rectangle,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_RIGHT_POS)
+                    .color(graphics::Color::BLACK),
+            )
+            .unwrap();
+            graphics::draw(
+                ctx,
+                quad_ctx,
                 &util::make_text(format!("Restart"), 32.),
-                DrawParam::default().dest(glam::vec2(365., 520.)),
+                DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(35., 20.)),
             )
             .unwrap();
         }
@@ -826,6 +893,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             || self.game_state == GameState::Info
             || self.game_state == GameState::Leaderboard
             || self.game_state == GameState::GameOver
+            || self.game_state == GameState::Pause
         {
             return Ok(());
         }
@@ -899,6 +967,26 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         _keymods: KeyMods,
         repeat: bool,
     ) {
+        if self.game_state == GameState::EndScreen {
+            if keycode == KeyCode::Backspace {
+                self.player_name.pop();
+            }
+
+            return;
+        }
+
+        if (self.game_state == GameState::Game || self.game_state == GameState::Pause)
+            && keycode == KeyCode::Escape
+        {
+            self.game_state = if self.game_state == GameState::Game {
+                GameState::Pause
+            } else {
+                GameState::Game
+            };
+
+            return;
+        }
+
         if keycode != KeyCode::F {
             self.double_press_timer = None;
         }
@@ -936,10 +1024,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             _ => (),
         };
-
-        if self.game_state == GameState::EndScreen && keycode == KeyCode::Backspace {
-            self.player_name.pop();
-        }
     }
 
     fn key_up_event(
@@ -998,24 +1082,32 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     || self.game_state == GameState::Leaderboard
                     || self.game_state == GameState::GameOver
                     || self.game_state == GameState::EndScreen
+                    || self.game_state == GameState::Pause
                 {
                     if let Some(new_game_state) =
                         self.mouse_input_handler
                             .handle_menu_pressed(&self.game_state, x, y)
                     {
                         if new_game_state == GameState::Game {
-                            let is_game_over = self.game_state == GameState::GameOver;
+                            let is_proceed = self.game_state != GameState::GameOver
+                                && self.game_state != GameState::Pause;
 
-                            level::load_level(ctx, quad_ctx, self, self.level_idx, !is_game_over);
+                            level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceed);
                             self.n_objects = 1 + self.guards.len() + self.walls.len();
 
-                            if !is_game_over {
+                            if is_proceed {
                                 self.game_state = GameState::LevelAnimation;
                                 self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
+                            } else {
+                                self.game_state = GameState::Game
                             }
                         } else {
                             self.game_state = new_game_state;
                             self.curr_level_time = 0.;
+
+                            if self.game_state == GameState::Menu {
+                                self.level_idx = 0;
+                            }
                         }
 
                         if self.game_state == GameState::SubmitTime {

@@ -70,25 +70,17 @@ impl MouseInputHandler {
         let mouse_vec = glam::vec2(mx, my);
 
         if *game_state == GameState::Menu {
-            if util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::MENU_PLAY_POS,
-                mouse_vec,
-            ) {
+            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_PLAY_POS, mouse_vec) {
                 return Some(GameState::Game);
             }
 
-            if util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::MENU_INFO_POS,
-                mouse_vec,
-            ) {
+            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_INFO_POS, mouse_vec) {
                 return Some(GameState::Info);
             }
 
             if util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::MENU_LEADERBOARD_POS,
+                constants::BTN_DIM,
+                constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
             ) {
                 return Some(GameState::Leaderboard);
@@ -96,38 +88,43 @@ impl MouseInputHandler {
         }
 
         if *game_state == GameState::Info || *game_state == GameState::Leaderboard {
-            if util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::MENU_BACK_POS,
-                mouse_vec,
-            ) {
+            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_BACK_POS, mouse_vec) {
                 return Some(GameState::Menu);
             }
         }
 
-        if *game_state == GameState::GameOver || *game_state == GameState::EndScreen {
+        if *game_state == GameState::GameOver || *game_state == GameState::Pause {
             if util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::BUTTON_CENTER_POS,
+                constants::BTN_DIM,
+                constants::BTN_BOTTOM_LEFT_POS,
                 mouse_vec,
             ) {
-                if *game_state == GameState::GameOver {
-                    return Some(GameState::Game);
-                } else {
-                    return Some(GameState::Menu);
-                }
+                return Some(GameState::Menu);
+            } else if util::rect_contains_point(
+                constants::BTN_DIM,
+                constants::BTN_BOTTOM_RIGHT_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Game);
             }
         }
 
-        // Submit button
-        if *game_state == GameState::EndScreen
-            && util::rect_contains_point(
-                constants::MENU_RECT_DIM,
-                constants::MENU_LEADERBOARD_POS,
+        if *game_state == GameState::EndScreen {
+            if util::rect_contains_point(
+                constants::BTN_DIM,
+                constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
-            )
-        {
-            return Some(GameState::SubmitTime);
+            ) {
+                return Some(GameState::SubmitTime);
+            }
+
+            if util::rect_contains_point(
+                constants::BTN_DIM,
+                constants::BTN_BOTTOM_LEFT_POS,
+                mouse_vec,
+            ) {
+                return Some(GameState::Menu);
+            }
         }
 
         return None;

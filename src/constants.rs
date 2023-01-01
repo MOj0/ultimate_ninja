@@ -40,14 +40,13 @@ pub const TELEPORT_COST: f32 = 50.;
 
 pub const N_FOV_RAYS: u32 = 10;
 
-pub const MENU_RECT_DIM: glam::Vec2 = glam::vec2(250., 75.);
+pub const BTN_DIM: glam::Vec2 = glam::vec2(250., 75.);
 
-pub const MENU_PLAY_POS: glam::Vec2 = glam::vec2(450., 200.);
-pub const MENU_INFO_POS: glam::Vec2 = glam::vec2(450., 350.);
-pub const MENU_LEADERBOARD_POS: glam::Vec2 = glam::vec2(450., 500.);
-pub const MENU_BACK_POS: glam::Vec2 = glam::vec2(30., 120.);
-pub const MENU_GAME_POS: glam::Vec2 = glam::vec2(100., 500.);
-pub const BUTTON_CENTER_POS: glam::Vec2 = glam::vec2(330., 500.);
+pub const BTN_PLAY_POS: glam::Vec2 = glam::vec2(450., 200.);
+pub const BTN_INFO_POS: glam::Vec2 = glam::vec2(450., 350.);
+pub const BTN_BACK_POS: glam::Vec2 = glam::vec2(30., 120.);
+pub const BTN_BOTTOM_LEFT_POS: glam::Vec2 = glam::vec2(100., 500.);
+pub const BTN_BOTTOM_RIGHT_POS: glam::Vec2 = glam::vec2(450., 500.);
 
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
 
