@@ -519,14 +519,14 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text(format!("Total time: {:.3}", total_time), 32.),
-            graphics::DrawParam::default().dest(glam::vec2(225., 250.)),
+            graphics::DrawParam::default().dest(glam::vec2(225., 325.)),
         )?;
 
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Enter username:".into(), 32.),
-            graphics::DrawParam::default().dest(glam::vec2(200., 300.)),
+            graphics::DrawParam::default().dest(glam::vec2(200., 375.)),
         )?;
 
         graphics::draw(
@@ -534,14 +534,14 @@ When you complete your mission, a pathway to the next level will appear"
             quad_ctx,
             &self.menu_rectangle,
             graphics::DrawParam::default()
-                .dest(glam::vec2(200., 340.))
+                .dest(glam::vec2(180., 410.))
                 .scale(glam::vec2(2., 1.)),
         )?;
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text(format!("{}", self.player_name), 32.),
-            graphics::DrawParam::default().dest(glam::vec2(215., 360.)),
+            graphics::DrawParam::default().dest(glam::vec2(200., 430.)),
         )?;
         Ok(())
     }

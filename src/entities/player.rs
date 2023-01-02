@@ -64,6 +64,7 @@ impl Player {
                 ctx,
                 quad_ctx,
                 100.,
+                0.5,
                 1.,
                 ggez::graphics::Rect::new(10., 10., 200., 20.),
                 ggez::graphics::Color::GREEN,

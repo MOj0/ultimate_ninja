@@ -1,7 +1,8 @@
 pub struct StaminaComponent {
     pub max_stamina: f32,
     pub stamina: f32,
-    pub change_rate: f32,
+    pub decrease_rate: f32,
+    pub increase_rate: f32,
     pub stamina_mesh: ggez::graphics::Mesh,
 }
 
@@ -10,14 +11,16 @@ impl StaminaComponent {
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
         max_stamina: f32,
-        change_rate: f32,
+        decrease_rate: f32,
+        increase_rate: f32,
         rect: ggez::graphics::Rect,
         color: ggez::graphics::Color,
     ) -> Self {
         Self {
             max_stamina,
             stamina: max_stamina,
-            change_rate,
+            decrease_rate,
+            increase_rate,
             stamina_mesh: ggez::graphics::Mesh::new_rectangle(
                 ctx,
                 quad_ctx,
@@ -31,8 +34,11 @@ impl StaminaComponent {
 
     #[inline]
     pub fn update(&mut self, is_decreasing: bool) {
-        self.stamina = (self.stamina + self.change_rate * is_decreasing.then(|| -1.).unwrap_or(1.))
-            .clamp(0., self.max_stamina);
+        self.stamina = (self.stamina
+            + is_decreasing
+                .then(|| -self.decrease_rate)
+                .unwrap_or(self.increase_rate))
+        .clamp(0., self.max_stamina);
     }
 
     #[inline]

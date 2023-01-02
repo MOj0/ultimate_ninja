@@ -18,6 +18,10 @@ const ALL_LEVELS: &[&str] = &[
     "levels/level6.txt",
     "levels/level7.txt",
     "levels/level8.txt",
+    "levels/level9.txt",
+    "levels/level10.txt",
+    "levels/level11.txt",
+    "levels/level12.txt",
 ];
 
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
