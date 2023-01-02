@@ -59,14 +59,20 @@ fn get_colliding_vec_components_all(
 ) -> (bool, bool) {
     let rect_of_next_move = &entities::get_rect_of_next_move(transform, move_component, aabb);
 
-    // Filter to only those walls which are neighbouring and compute collision ONLY for them
+    // Filter to only those walls which are in 3x3 grid area of the player
     walls
         .iter()
         .filter(|wall| {
+            let n_cells_in_row =
+                (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize;
+
             let abs_diff = (wall.transform.grid_index - transform.grid_index).abs();
-            abs_diff <= 1
-                || abs_diff
-                    == (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize
+            let abs_diff_bottom_row =
+                (wall.transform.grid_index - transform.grid_index + n_cells_in_row).abs();
+            let abs_diff_top_row =
+                (wall.transform.grid_index - transform.grid_index - n_cells_in_row).abs();
+
+            abs_diff <= 1 || abs_diff_bottom_row <= 1 || abs_diff_top_row <= 1
         })
         .fold((false, false), |init, wall| {
             let collding_vec_components =

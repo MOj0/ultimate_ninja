@@ -45,6 +45,8 @@ pub enum GameState {
     EndScreen,
 }
 
+// TODO: Make a sword that you can pick up and kill the guards and target
+
 pub struct Game {
     game_state: GameState,
     assets: assets::Assets,
