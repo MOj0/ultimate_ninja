@@ -2,6 +2,7 @@ mod animation_component;
 mod assets;
 mod camera_component;
 mod collision_component;
+mod compute_move_component;
 mod constants;
 mod entities;
 mod level;
@@ -45,8 +46,6 @@ pub enum GameState {
     EndScreen,
 }
 
-// TODO: Make a sword that you can pick up and kill the guards and target
-
 pub struct Game {
     game_state: GameState,
     assets: assets::Assets,
@@ -63,6 +62,7 @@ pub struct Game {
     level_idx: usize,
     dead_target_detected: bool,
     debug_draw: bool,
+    is_touch_joystick_activated: bool,
     menu_rectangle: graphics::Mesh,
     grid_line: graphics::Mesh,
     n_objects: usize,
@@ -216,6 +216,7 @@ impl Game {
             level_idx,
             dead_target_detected: false,
             debug_draw: false,
+            is_touch_joystick_activated: false,
             menu_rectangle,
             grid_line,
             n_objects: 0,
@@ -696,22 +697,23 @@ When you complete your mission, a pathway to the next level will appear"
         )
         .unwrap();
 
-        // TODO: Only draw this when input is pressed
         // Draw touch input
-        // sprite_component::render_mesh(
-        //     ctx,
-        //     quad_ctx,
-        //     &self.mouse_input_handler.touch_area,
-        //     DrawParam::default(),
-        // )
-        // .unwrap();
-        // sprite_component::render_mesh(
-        //     ctx,
-        //     quad_ctx,
-        //     &self.mouse_input_handler.direction_circle,
-        //     DrawParam::default().offset(-self.mouse_input_handler.direction_offset),
-        // )
-        // .unwrap();
+        if self.is_touch_joystick_activated {
+            sprite_component::render_mesh(
+                ctx,
+                quad_ctx,
+                &self.mouse_input_handler.touch_area,
+                DrawParam::default(),
+            )
+            .unwrap();
+            sprite_component::render_mesh(
+                ctx,
+                quad_ctx,
+                &self.mouse_input_handler.direction_circle,
+                DrawParam::default().offset(-self.mouse_input_handler.direction_offset),
+            )
+            .unwrap();
+        }
 
         if self.target.is_dead {
             sprite_component::render_sprite(
@@ -1173,13 +1175,14 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         _dx: f32,
         _dy: f32,
     ) {
-        let dir = self
+        let direction = self
             .mouse_input_handler
             .get_move_direction(glam::vec2(x, y));
 
-        if dir.is_some() {
-            self.player.set_dir(dir.unwrap());
+        if let Some(dir) = direction {
+            self.player.set_dir(dir);
         }
+        self.is_touch_joystick_activated = direction.is_some();
 
         self.player.set_stealth_intent(false);
     }

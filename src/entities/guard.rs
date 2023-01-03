@@ -1,4 +1,5 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
+use crate::compute_move_component::ComputeMoveComponent;
 use crate::constants;
 use crate::entities;
 use crate::entities::wall::Wall;
@@ -20,6 +21,7 @@ pub struct Guard {
     pub move_component: MoveComponent,
     pub look: LookComponent,
     pub aabb: AABBCollisionComponent,
+    pub compute_move_component: ComputeMoveComponent,
 
     pub move_dir: glam::Vec2,
     pub max_move_interval: f32,
@@ -69,6 +71,7 @@ impl Guard {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
+            compute_move_component: ComputeMoveComponent::new(4, 100.),
             move_dir: glam::Vec2::ZERO,
             max_move_interval: 0.,
             move_interval: 0.,
@@ -133,7 +136,7 @@ impl Guard {
         )
     }
 
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, dt: f32, rect_objects: &Vec<(&ggez::graphics::Rect, isize)>) {
         if self.move_interval <= 0. {
             if self.guard_state == GuardState::Walk && qrand::gen_range(1., 100.) <= 3. {
                 let lookout_speed = qrand::gen_range(0.5, 0.9)
@@ -148,9 +151,14 @@ impl Guard {
 
                 self.move_component.set_direction_normalized(self.move_dir);
 
-                self.move_dir = self.calculate_move_dir();
+                // TODO: Fix the infinite move change bug and recompute move direction when he is about to go into a wall
+                // self.move_dir = self.calculate_move_dir();
+                self.move_dir = self
+                    .compute_move_component
+                    .get_move_direction(&self.transform, rect_objects)
+                    .normalize();
 
-                self.max_move_interval = qrand::gen_range::<f32>(0.2, 0.4);
+                self.max_move_interval = qrand::gen_range::<f32>(3., 5.);
                 self.move_interval = self.max_move_interval;
             }
         } else {
@@ -227,10 +235,16 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         game_state.sound_collection.play(ctx, 6).unwrap();
     }
 
+    let aabb_objects = game_state
+        .walls
+        .iter()
+        .map(|wall| (&wall.aabb.rect, wall.transform.grid_index))
+        .collect::<Vec<(&ggez::graphics::Rect, isize)>>();
+
     game_state
         .guards
         .iter_mut()
-        .for_each(|guard| guard.update(dt));
+        .for_each(|guard| guard.update(dt, &aabb_objects));
 }
 
 fn is_transform_detected(
