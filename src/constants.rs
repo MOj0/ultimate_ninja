@@ -25,7 +25,7 @@ pub const ENTITY_SIZE: f32 = 8.;
 pub const PLAYER_SPEED: f32 = 3.;
 
 pub const TARGET_SPEED: f32 = 1.;
-pub const GUARD_SPEED: f32 = 1.8;
+pub const GUARD_SPEED: f32 = 1.4;
 pub const GUARD_SPEED_FAST: f32 = 2.8;
 pub const GUARD_FOV: f32 = PI / 6.;
 pub const GUARD_VIEW_DISTANCE: f32 = 170.;

@@ -26,6 +26,7 @@ pub struct Guard {
     pub move_dir: glam::Vec2,
     pub max_move_interval: f32,
     pub move_interval: f32,
+    pub wall_move_interval: f32,
     pub look_color: ggez::graphics::Color,
 }
 
@@ -71,10 +72,16 @@ impl Guard {
                 constants::ENTITY_SIZE,
                 constants::ENTITY_SIZE,
             )),
-            compute_move_component: ComputeMoveComponent::new(4, 100.),
+            compute_move_component: ComputeMoveComponent::new(
+                ctx,
+                quad_ctx,
+                8,
+                constants::GUARD_VIEW_DISTANCE,
+            ),
             move_dir: glam::Vec2::ZERO,
             max_move_interval: 0.,
             move_interval: 0.,
+            wall_move_interval: 0.,
             look_color: ggez::graphics::Color::WHITE,
         }
     }
@@ -84,6 +91,8 @@ impl Guard {
         if dir.length_squared() > 0. {
             self.transform.angle = util::get_vec_angle(dir);
         }
+
+        self.look.look_at = dir;
     }
 
     #[inline]
@@ -101,90 +110,84 @@ impl Guard {
         self.aabb.colliding_axis = colliding_axis;
     }
 
-    pub fn calculate_move_dir(&self) -> glam::Vec2 {
-        let dx = 2. * constants::GUARD_FOV / self.look.ray_scales.len() as f32;
-
-        let (idx, max_ray) = self
+    pub fn do_move(&mut self, rect_objects: &Vec<(&ggez::graphics::Rect, isize)>) {
+        let min_ray_scale = self
             .look
             .ray_scales
             .iter()
-            .enumerate()
-            .map(|(i, v)| (i, (*v * 100.) as i32))
-            .max_by(|(_, a), (_, b)| a.cmp(b))
-            .unwrap_or_default();
+            .min_by(|&&a, &&b| ((a * 100.) as i32).cmp(&((b * 100.) as i32)))
+            .unwrap_or(&1.);
 
-        if max_ray < 60 {
-            // Rotate 180 deg
-            return util::vec_from_angle(self.transform.angle + constants::PI);
-        }
-        if max_ray < 100 {
-            // Rotate 90 deg
-            return util::vec_from_angle(
-                self.transform.angle + (qrand::gen_range::<f32>(0., 1.)) * constants::PI / 2.,
-            );
-        }
+        let is_close_to_wall = *min_ray_scale < 0.6;
 
-        if self.guard_state == GuardState::Alert {
-            return util::vec_from_angle(
-                self.transform.angle - constants::GUARD_FOV + idx as f32 * dx, // Go in the direction of the max_ray
-            );
-        }
+        if self.move_interval <= 0. || is_close_to_wall && self.wall_move_interval <= 0. {
+            let new_dir = self
+                .compute_move_component
+                .get_move_direction(&self.transform, rect_objects)
+                .normalize();
 
-        // GuardState == Walk
-        util::vec_from_angle(
-            self.transform.angle + qrand::gen_range::<f32>(-1., 1.) * constants::PI / 3.,
-        )
+            self.move_dir = new_dir;
+
+            self.max_move_interval = qrand::gen_range(5., 7.);
+            self.move_interval = self.max_move_interval;
+
+            if is_close_to_wall {
+                self.wall_move_interval = if self.guard_state == GuardState::Walk {
+                    1.
+                } else {
+                    0.75
+                };
+            }
+        } else {
+            let lerped_dir = if self.max_move_interval != 0. {
+                util::vec_lerp(
+                    self.move_component.direction,
+                    self.move_dir,
+                    1. - self.move_interval / self.max_move_interval,
+                )
+            } else {
+                self.move_component.direction
+            };
+
+            self.move_component.set_direction_normalized(lerped_dir);
+            self.set_angle(self.move_component.direction);
+        }
     }
 
     pub fn update(&mut self, dt: f32, rect_objects: &Vec<(&ggez::graphics::Rect, isize)>) {
-        if self.move_interval <= 0. {
-            if self.guard_state == GuardState::Walk && qrand::gen_range(1., 100.) <= 3. {
-                let lookout_speed = qrand::gen_range(0.5, 0.9)
-                    * (qrand::gen_range(-2, 1) >= 0).then_some(1.).unwrap_or(-1.);
-
-                self.guard_state = GuardState::Lookout(lookout_speed);
-                self.move_interval = qrand::gen_range(3., 5.);
-            } else {
-                if self.guard_state != GuardState::Alert {
-                    self.guard_state = GuardState::Walk;
-                }
-
-                self.move_component.set_direction_normalized(self.move_dir);
-
-                // TODO: Fix the infinite move change bug and recompute move direction when he is about to go into a wall
-                // self.move_dir = self.calculate_move_dir();
-                self.move_dir = self
-                    .compute_move_component
-                    .get_move_direction(&self.transform, rect_objects)
-                    .normalize();
-
-                self.max_move_interval = qrand::gen_range::<f32>(3., 5.);
-                self.move_interval = self.max_move_interval;
-            }
-        } else {
-            let lerped_dir = util::vec_lerp(
-                self.move_component.direction,
-                self.move_dir,
-                self.max_move_interval - self.move_interval,
-            );
-
-            self.move_component.set_direction_normalized(lerped_dir);
-        }
-
         match self.guard_state {
             GuardState::Lookout(lookout_speed) => {
                 let lookout_dir = util::vec_from_angle(self.transform.angle + dt * lookout_speed);
 
                 self.set_speed(0.);
                 self.move_dir = lookout_dir;
-                self.move_component.set_direction(lookout_dir);
-            }
-            GuardState::Walk => self.set_speed(constants::GUARD_SPEED),
-            GuardState::Alert => self.set_speed(constants::GUARD_SPEED_FAST),
-        };
 
-        self.look.look_at = self.move_component.direction;
-        self.set_angle(self.move_component.direction);
+                self.move_component.set_direction(lookout_dir);
+                self.set_angle(self.move_component.direction);
+
+                if self.move_interval <= 0. {
+                    self.guard_state = GuardState::Walk;
+                }
+            }
+            GuardState::Walk => {
+                if qrand::gen_range(1., 1000.) <= 5. {
+                    let lookout_speed = qrand::gen_range(0.5, 0.9)
+                        * (qrand::gen_range(0., 1.) >= 0.5)
+                            .then_some(1.)
+                            .unwrap_or(-1.);
+
+                    self.guard_state = GuardState::Lookout(lookout_speed);
+                    self.move_interval = qrand::gen_range(3., 5.);
+                }
+
+                self.do_move(rect_objects);
+                self.set_speed(constants::GUARD_SPEED);
+            }
+            GuardState::Alert => {
+                self.do_move(rect_objects);
+                self.set_speed(constants::GUARD_SPEED_FAST);
+            }
+        };
 
         entities::move_entity(
             &mut self.transform,
@@ -202,7 +205,8 @@ impl Guard {
             self.animation.set_animation_state(AnimationState::Active);
         }
 
-        self.move_interval -= dt;
+        self.move_interval = (self.move_interval - dt).max(-1.);
+        self.wall_move_interval = (self.wall_move_interval - dt).max(-1.);
     }
 }
 

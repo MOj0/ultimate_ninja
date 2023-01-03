@@ -46,6 +46,11 @@ pub enum GameState {
     EndScreen,
 }
 
+// TODO: Add more guard types
+// TODO: Add different floor sprites
+// TODO: Add footstep sounds -> guards can hear footsteps
+// TODO: Implement the ability to kill the guards
+
 pub struct Game {
     game_state: GameState,
     assets: assets::Assets,
@@ -663,6 +668,31 @@ When you complete your mission, a pathway to the next level will appear"
                         .count();
                 })
                 .count();
+
+            // Draw rays for compute_move_component
+            self.guards
+                .iter()
+                .map(|guard| {
+                    guard
+                        .compute_move_component
+                        .ray_lines
+                        .iter()
+                        .map(|ray_line| {
+                            sprite_component::render_mesh(
+                                ctx,
+                                quad_ctx,
+                                ray_line,
+                                DrawParam::default()
+                                    .dest(self.camera.world_position(guard.transform.position))
+                                    .rotation(
+                                        -constants::PI / 2.
+                                            - util::get_vec_angle(guard.look.look_at),
+                                    ),
+                            )
+                        })
+                        .count();
+                })
+                .count();
         }
 
         n_objects_drawn += self
@@ -1026,6 +1056,17 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
+            KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
+            KeyCode::P => {
+                // TODO: Delete this [debugging purposes]
+                self.guards.iter_mut().for_each(|guard| {
+                    guard.guard_state = entities::guard::GuardState::Alert;
+                    guard.set_look_color(ggez::graphics::Color::RED);
+                });
+
+                self.dead_target_detected = true;
+                self.sound_collection.play(ctx, 6).unwrap();
+            }
             _ => (),
         };
     }

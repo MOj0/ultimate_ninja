@@ -5,10 +5,16 @@ use quad_rand as qrand;
 
 pub struct ComputeMoveComponent {
     pub rays: Vec<glam::Vec2>,
+    pub ray_lines: Vec<ggez::graphics::Mesh>,
 }
 
 impl ComputeMoveComponent {
-    pub fn new(n_rays: usize, ray_length: f32) -> Self {
+    pub fn new(
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        n_rays: usize,
+        ray_length: f32,
+    ) -> Self {
         let ray = glam::vec2(0., 1.) * ray_length;
         let angle_delta = 2. * constants::PI / (n_rays as f32);
 
@@ -19,7 +25,22 @@ impl ComputeMoveComponent {
             })
             .collect::<Vec<glam::Vec2>>();
 
-        Self { rays }
+        // Build a line mesh for each ray
+        let ray_lines = rays
+            .iter()
+            .map(|ray| {
+                ggez::graphics::Mesh::new_line(
+                    ctx,
+                    quad_ctx,
+                    &[glam::vec2(0., 0.), glam::vec2(ray.x, ray.y)],
+                    2.0,
+                    ggez::graphics::Color::WHITE,
+                )
+                .unwrap()
+            })
+            .collect::<Vec<ggez::graphics::Mesh>>();
+
+        Self { rays, ray_lines }
     }
 
     // Retruns a move direction vector, it is not guaranteed to be normalized
@@ -32,13 +53,11 @@ impl ComputeMoveComponent {
             .rays
             .iter()
             .map(|ray| {
-                let angle = -constants::PI / 2.;
-                let rotated_ray = util::rotate_point_around_center(*ray, glam::vec2(0., 0.), angle);
                 (
                     source.position.x,
                     source.position.y,
-                    source.position.x + rotated_ray.x,
-                    source.position.y + rotated_ray.y,
+                    source.position.x + ray.x,
+                    source.position.y + ray.y,
                 )
             })
             .collect();
@@ -46,11 +65,15 @@ impl ComputeMoveComponent {
         let source_grid_idx = util::compute_grid_index(&source.position);
         let row = (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize;
         let source_grid_indices = vec![
+            source_grid_idx - row - 1,
             source_grid_idx - row,
+            source_grid_idx - row + 1,
             source_grid_idx - 1,
             source_grid_idx,
             source_grid_idx + 1,
+            source_grid_idx + row - 1,
             source_grid_idx + row,
+            source_grid_idx + row + 1,
         ];
 
         let ray_grid_indices = ray_lines
