@@ -21,6 +21,8 @@ pub struct Assets {
     pub exit: graphics::Image,
 
     pub ultimate_ninja: graphics::Image,
+
+    pub footstep: graphics::Image,
 }
 
 impl Assets {
@@ -47,6 +49,8 @@ impl Assets {
         let ultimate_ninja =
             graphics::Image::new(ctx, quad_ctx, "textures/ultimate_ninja.png").unwrap();
 
+        let footstep = graphics::Image::new(ctx, quad_ctx, "textures/footstep.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -68,6 +72,8 @@ impl Assets {
             exit,
 
             ultimate_ninja,
+
+            footstep,
         }
     }
 }

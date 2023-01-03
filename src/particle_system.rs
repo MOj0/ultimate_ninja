@@ -54,6 +54,7 @@ pub struct ParticleEmitter {
     max_particles: usize,
     min_lifetime: f32,
     max_lifetime: f32,
+    scale_increase: f32,
 
     sprite_batch: ggez::graphics::spritebatch::SpriteBatch,
 
@@ -71,6 +72,7 @@ impl ParticleEmitter {
         position: glam::Vec2,
         min_lifetime: f32,
         max_lifetime: f32,
+        scale_increase: f32,
         color: ggez::graphics::Color,
         initial_scale: f32,
         max_particles: usize,
@@ -83,6 +85,7 @@ impl ParticleEmitter {
             max_particles,
             min_lifetime,
             max_lifetime,
+            scale_increase,
             sprite_batch,
             color,
             initial_scale,
@@ -131,6 +134,7 @@ impl ParticleEmitter {
             .filter(|(_, lifetime)| **lifetime > 0.)
             .for_each(|(particle_idx, lifetime)| {
                 self.positions[particle_idx] += self.velocities[particle_idx];
+                self.scales[particle_idx] += self.scale_increase;
                 *lifetime -= dt;
             });
     }

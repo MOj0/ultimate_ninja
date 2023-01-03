@@ -14,8 +14,6 @@ use crate::SpriteComponent;
 use crate::constants;
 use crate::entities;
 
-use quad_rand as qrand;
-
 pub struct Player {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
@@ -27,7 +25,11 @@ pub struct Player {
     pub stealth_intent: bool,
     pub is_stealth: bool,
     pub was_stealth_prev: bool,
+    pub footstep_timer: f32,
 }
+
+// TODO: Implement hearing for guards
+// TODO: Match the radius of emitted particle with the game's hearing logic
 
 impl Player {
     pub fn new(
@@ -72,6 +74,7 @@ impl Player {
             stealth_intent: false,
             is_stealth: false,
             was_stealth_prev: false,
+            footstep_timer: 0.,
         }
     }
 
@@ -186,13 +189,11 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         return;
     }
 
-    if player.is_moving() {
-        let random_dir = 4. * util::vec_from_angle(qrand::gen_range(0., 1.) * 2. * constants::PI);
-        let emit_position = player.transform.position
-            - 1.75 * player.transform.size * player.move_component.direction
-            + random_dir;
-
-        game_state.particle_system.emit(0, emit_position, 1);
+    if player.is_moving() && player.footstep_timer <= 0. {
+        game_state
+            .particle_system
+            .emit(0, player.transform.position, 1);
+        player.footstep_timer = 0.33;
     }
 
     let target = &mut game_state.target;
@@ -213,6 +214,8 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     if exit.player_exited {
         sound_collection.play(ctx, 7).unwrap();
     }
+
+    player.footstep_timer = (player.footstep_timer - dt).max(-1.);
 }
 
 fn handle_stealth_sound(

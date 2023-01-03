@@ -147,18 +147,20 @@ impl Game {
 
         let player_move_particle_emitter = particle_system::ParticleEmitter::new(
             glam::Vec2::ZERO,
-            0.05,
             0.1,
-            ggez::graphics::Color::WHITE,
-            2.,
+            0.12,
+            0.01,
+            ggez::graphics::Color::new(1., 1., 1., 0.5),
+            0.75,
             100,
-            particle_image.clone(),
+            assets.footstep.clone(),
         );
 
         let target_killed_particle_emitter = particle_system::ParticleEmitter::new(
             glam::Vec2::ZERO,
             0.5,
             1.,
+            0.,
             ggez::graphics::Color::RED,
             5.,
             100,
@@ -169,6 +171,7 @@ impl Game {
             glam::Vec2::ZERO,
             0.1,
             0.3,
+            0.,
             ggez::graphics::Color::WHITE,
             5.,
             100,
