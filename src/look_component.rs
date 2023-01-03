@@ -201,10 +201,21 @@ impl LookComponent {
 }
 
 pub fn system(game_state: &mut Game) {
-    let transform_look_components = game_state
-        .guards
-        .iter_mut()
-        .map(|guard| (&guard.transform, &mut guard.look));
+    let transform_look_basic = game_state.guards_basic.iter_mut().map(|guard| {
+        (
+            &guard.guard.transform,
+            &mut guard.guard.look_components[guard.guard.look_idx],
+        )
+    });
+
+    let transform_look_scout = game_state.guards_scout.iter_mut().map(|guard| {
+        (
+            &guard.guard.transform,
+            &mut guard.guard.look_components[guard.guard.look_idx],
+        )
+    });
+
+    let transform_look_components = transform_look_basic.chain(transform_look_scout);
 
     let aabb_objects = game_state
         .walls

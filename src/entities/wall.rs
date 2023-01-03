@@ -105,13 +105,24 @@ pub fn check_collision(game_state: &mut Game) {
         .target
         .set_colliding_vec_components(target_colliding_vec_components);
 
-    game_state.guards.iter_mut().for_each(|guard| {
-        let guard_colliding_axis = get_colliding_vec_components_all(
-            &game_state.walls,
-            &guard.transform,
-            &guard.move_component,
-            &guard.aabb,
-        );
-        guard.set_colliding_vec_components(guard_colliding_axis);
-    });
+    let guards_collding_axis = game_state
+        .get_all_guards()
+        .iter()
+        .map(|guard| {
+            get_colliding_vec_components_all(
+                &game_state.walls,
+                &guard.transform,
+                &guard.move_component,
+                &guard.aabb,
+            )
+        })
+        .collect::<Vec<(bool, bool)>>();
+
+    game_state
+        .get_all_guards_mut()
+        .iter_mut()
+        .zip(guards_collding_axis)
+        .for_each(|(guard, guard_colliding_axis)| {
+            guard.set_colliding_vec_components(guard_colliding_axis)
+        });
 }

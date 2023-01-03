@@ -57,7 +57,8 @@ pub struct Game {
     camera: camera_component::CameraComponent,
     player: entities::player::Player,
     target: entities::target::Target,
-    guards: Vec<entities::guard::Guard>,
+    guards_basic: Vec<entities::guards::guard_basic::GuardBasic>,
+    guards_scout: Vec<entities::guards::guard_scout::GuardScout>,
     walls: Vec<entities::wall::Wall>,
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
@@ -211,7 +212,8 @@ impl Game {
             camera,
             player,
             target,
-            guards: vec![],
+            guards_basic: vec![],
+            guards_scout: vec![],
             walls: vec![],
             exit,
             double_press_timer: None,
@@ -247,7 +249,8 @@ impl Game {
 
         self.exit.player_exited = false;
 
-        self.guards.clear();
+        self.guards_basic.clear();
+        self.guards_scout.clear();
         self.walls.clear();
 
         self.particle_system.reset();
@@ -257,6 +260,39 @@ impl Game {
         }
 
         self.leaderboard = None;
+    }
+
+    // Collect all common guard objects into one vector
+    pub fn get_all_guards(&self) -> Vec<&entities::guards::Guard> {
+        let guards_b = self
+            .guards_basic
+            .iter()
+            .map(|guard_basic| &guard_basic.guard);
+
+        let guards_s = self
+            .guards_scout
+            .iter()
+            .map(|guard_sniper| &guard_sniper.guard);
+
+        guards_b
+            .chain(guards_s)
+            .collect::<Vec<&entities::guards::Guard>>()
+    }
+
+    pub fn get_all_guards_mut(&mut self) -> Vec<&mut entities::guards::Guard> {
+        let guards_b = self
+            .guards_basic
+            .iter_mut()
+            .map(|guard_basic| &mut guard_basic.guard);
+
+        let guards_s = self
+            .guards_scout
+            .iter_mut()
+            .map(|guard_sniper| &mut guard_sniper.guard);
+
+        guards_b
+            .chain(guards_s)
+            .collect::<Vec<&mut entities::guards::Guard>>()
     }
 
     fn next_level(
@@ -275,7 +311,8 @@ impl Game {
             self.level_idx += 1;
             level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceeed);
 
-            self.n_objects = 1 + self.guards.len() + self.walls.len();
+            self.n_objects =
+                1 + self.guards_basic.len() + self.guards_scout.len() + self.walls.len();
             self.game_state = GameState::LevelAnimation;
             self.curr_level_time = constants::LEVEL_ANIMATION_TIME;
         }
@@ -595,8 +632,10 @@ When you complete your mission, a pathway to the next level will appear"
             n_objects_drawn += 1;
         }
 
-        n_objects_drawn += self
-            .guards
+        let all_guards = self.get_all_guards();
+
+        // Draw guards
+        n_objects_drawn += all_guards
             .iter()
             .filter(|guard| self.camera.contains(&guard.aabb))
             .map(|guard| {
@@ -611,16 +650,15 @@ When you complete your mission, a pathway to the next level will appear"
             })
             .count();
 
-        // Draw look mesh compositions
+        // Draw look mesh compositions for basic guards
         if self.game_state != GameState::LevelAnimation {
-            self.guards
+            all_guards
                 .iter()
                 .map(|guard| {
-                    guard
-                        .look
+                    guard.look_components[guard.look_idx]
                         .fov_mesh_composition
                         .iter()
-                        .zip(&guard.look.ray_scales)
+                        .zip(&guard.look_components[guard.look_idx].ray_scales)
                         .flat_map(|(fov_section, scale)| {
                             sprite_component::render_mesh(
                                 ctx,
@@ -630,7 +668,9 @@ When you complete your mission, a pathway to the next level will appear"
                                     .dest(self.camera.world_position(guard.transform.position))
                                     .rotation(
                                         -constants::PI / 2.
-                                            - util::get_vec_angle(guard.look.look_at),
+                                            - util::get_vec_angle(
+                                                guard.look_components[guard.look_idx].look_at,
+                                            ),
                                     )
                                     .scale(glam::Vec2::splat(*scale))
                                     .color(guard.look_color),
@@ -643,11 +683,10 @@ When you complete your mission, a pathway to the next level will appear"
 
         if self.debug_draw {
             // Draw look rays
-            self.guards
+            all_guards
                 .iter()
                 .map(|guard| {
-                    guard
-                        .look
+                    guard.look_components[guard.look_idx]
                         .ray_lines
                         .iter()
                         .enumerate()
@@ -660,9 +699,13 @@ When you complete your mission, a pathway to the next level will appear"
                                     .dest(self.camera.world_position(guard.transform.position))
                                     .rotation(
                                         -constants::PI / 2.
-                                            - util::get_vec_angle(guard.look.look_at),
+                                            - util::get_vec_angle(
+                                                guard.look_components[guard.look_idx].look_at,
+                                            ),
                                     )
-                                    .scale(glam::Vec2::splat(guard.look.ray_scales[ray_idx])),
+                                    .scale(glam::Vec2::splat(
+                                        guard.look_components[guard.look_idx].ray_scales[ray_idx],
+                                    )),
                             )
                         })
                         .count();
@@ -670,7 +713,7 @@ When you complete your mission, a pathway to the next level will appear"
                 .count();
 
             // Draw rays for compute_move_component
-            self.guards
+            all_guards
                 .iter()
                 .map(|guard| {
                     guard
@@ -686,7 +729,9 @@ When you complete your mission, a pathway to the next level will appear"
                                     .dest(self.camera.world_position(guard.transform.position))
                                     .rotation(
                                         -constants::PI / 2.
-                                            - util::get_vec_angle(guard.look.look_at),
+                                            - util::get_vec_angle(
+                                                guard.look_components[guard.look_idx].look_at,
+                                            ),
                                     ),
                             )
                         })
@@ -948,7 +993,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         self.target.update(dt);
 
-        entities::guard::system(ctx, self, dt);
+        entities::guards::guard_basic::system(ctx, self, dt);
+        entities::guards::guard_scout::system(ctx, self, dt);
 
         look_component::system(self);
 
@@ -1057,16 +1103,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::B => self.debug_draw = !self.debug_draw,
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
-            KeyCode::P => {
-                // TODO: Delete this [debugging purposes]
-                self.guards.iter_mut().for_each(|guard| {
-                    guard.guard_state = entities::guard::GuardState::Alert;
-                    guard.set_look_color(ggez::graphics::Color::RED);
-                });
-
-                self.dead_target_detected = true;
-                self.sound_collection.play(ctx, 6).unwrap();
-            }
             _ => (),
         };
     }
@@ -1138,7 +1174,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                                 && self.game_state != GameState::Pause;
 
                             level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceed);
-                            self.n_objects = 1 + self.guards.len() + self.walls.len();
+                            self.n_objects = 1
+                                + self.guards_basic.len()
+                                + self.guards_scout.len()
+                                + self.walls.len();
 
                             if is_proceed {
                                 self.game_state = GameState::LevelAnimation;

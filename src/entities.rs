@@ -1,5 +1,5 @@
 pub mod exit;
-pub mod guard;
+pub mod guards;
 pub mod player;
 pub mod target;
 pub mod wall;

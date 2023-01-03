@@ -1,6 +1,7 @@
 use crate::constants;
 use crate::entities::exit::Exit;
-use crate::entities::guard::Guard;
+use crate::entities::guards::guard_basic::GuardBasic;
+use crate::entities::guards::guard_scout::GuardScout;
 use crate::entities::player::Player;
 use crate::entities::target::Target;
 use crate::entities::wall::Wall;
@@ -75,12 +76,19 @@ pub fn load_level(
                 game_state.target =
                     Target::new(position_center, &assets, ggez::graphics::Color::GREEN)
             }
-            'g' => game_state.guards.push(Guard::new(
+            'g' => game_state.guards_basic.push(GuardBasic::new(
                 ctx,
                 quad_ctx,
                 position_center,
                 &assets,
                 ggez::graphics::Color::RED,
+            )),
+            's' => game_state.guards_scout.push(GuardScout::new(
+                ctx,
+                quad_ctx,
+                position_center,
+                &assets,
+                ggez::graphics::Color::CYAN,
             )),
             'x' => game_state.walls.push(Wall::new(
                 position,
