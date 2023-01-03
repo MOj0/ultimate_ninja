@@ -128,7 +128,7 @@ impl GuardBasic {
             }
             GuardState::Alert => {
                 self.do_move(rect_objects);
-                self.set_speed(constants::GUARD_SPEED_FAST);
+                self.set_speed(constants::GUARD_SPEED_MEDIUM);
             }
         };
 

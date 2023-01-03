@@ -14,18 +14,17 @@ use crate::GameState;
 
 use quad_rand as qrand;
 
-// TODO: Make this a 'heavy' guard, moves faster, less scouting, when alterted gains a larger FOV
-pub struct GuardScout {
+pub struct GuardHeavy {
     pub guard: Guard,
 
-    pub scout_factor: f32,
     pub move_dir: glam::Vec2,
     pub max_move_interval: f32,
     pub move_interval: f32,
     pub wall_move_interval: f32,
+    pub is_using_next_look: bool,
 }
 
-impl GuardScout {
+impl GuardHeavy {
     pub fn new(
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
@@ -33,26 +32,26 @@ impl GuardScout {
         assets: &Assets,
         color: ggez::graphics::Color,
     ) -> Self {
-        let scout_look_component = LookComponent::new_with_mesh(
+        let heavy_look_component = LookComponent::new_with_mesh(
             ctx,
             quad_ctx,
             glam::vec2(0., 1.),
-            constants::GUARD_FOV_SMALL,
-            constants::GUARD_VIEW_DISTANCE_LONG,
+            constants::GUARD_FOV,
+            constants::GUARD_VIEW_DISTANCE_MEDIUM,
             constants::N_FOV_RAYS,
         );
 
         let mut guard = Guard::new(ctx, quad_ctx, position, assets, color);
-        guard.add_look_component(scout_look_component);
+        guard.add_look_component(heavy_look_component);
 
         Self {
             guard,
 
-            scout_factor: 1.,
             move_dir: glam::Vec2::ZERO,
             max_move_interval: 0.,
             move_interval: 0.,
             wall_move_interval: 0.,
+            is_using_next_look: false,
         }
     }
 
@@ -84,14 +83,14 @@ impl GuardScout {
 
             self.move_dir = new_dir;
 
-            self.max_move_interval = qrand::gen_range(5., 7.);
+            self.max_move_interval = qrand::gen_range(2., 4.);
             self.move_interval = self.max_move_interval;
 
             if is_close_to_wall {
                 self.wall_move_interval = if self.guard.guard_state == GuardState::Walk {
-                    1.
-                } else {
                     0.75
+                } else {
+                    0.4
                 };
             }
         } else {
@@ -115,9 +114,8 @@ impl GuardScout {
     pub fn update(&mut self, dt: f32, rect_objects: &Vec<(&ggez::graphics::Rect, isize)>) {
         match self.guard.guard_state {
             GuardState::Lookout(lookout_speed) => {
-                let lookout_dir = util::vec_from_angle(
-                    self.guard.transform.angle + dt * lookout_speed * self.scout_factor,
-                );
+                let lookout_dir =
+                    util::vec_from_angle(self.guard.transform.angle + dt * lookout_speed);
 
                 self.set_speed(0.);
                 self.move_dir = lookout_dir;
@@ -128,31 +126,31 @@ impl GuardScout {
                 if self.move_interval <= 0. {
                     self.guard.guard_state = GuardState::Walk;
                     self.guard.next_look_component();
-                } else if self.move_interval <= self.max_move_interval / 2. {
-                    self.scout_factor = -1.;
                 }
             }
             GuardState::Walk => {
-                if qrand::gen_range(1., 1000.) <= 12. {
-                    let lookout_speed = qrand::gen_range(1.2, 1.6)
+                if qrand::gen_range(1., 2000.) <= 1. {
+                    let lookout_speed = qrand::gen_range(0.3, 0.4)
                         * (qrand::gen_range(0., 1.) >= 0.5)
                             .then_some(1.)
                             .unwrap_or(-1.);
 
                     self.guard.guard_state = GuardState::Lookout(lookout_speed);
-                    self.max_move_interval = qrand::gen_range(12., 16.);
+                    self.max_move_interval = qrand::gen_range(1., 2.);
                     self.move_interval = self.max_move_interval;
-                    self.scout_factor = 1.;
-
-                    self.guard.next_look_component();
                 }
 
                 self.do_move(rect_objects);
-                self.set_speed(constants::GUARD_SPEED_SLOW);
+                self.set_speed(constants::GUARD_SPEED_MEDIUM);
             }
             GuardState::Alert => {
+                if !self.is_using_next_look {
+                    self.guard.next_look_component();
+                    self.is_using_next_look = true;
+                }
+
                 self.do_move(rect_objects);
-                self.set_speed(constants::GUARD_SPEED);
+                self.set_speed(constants::GUARD_SPEED_FAST);
             }
         };
 
@@ -184,7 +182,7 @@ impl GuardScout {
 pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     if is_transform_detected(
         &game_state.walls,
-        &game_state.guards_scout,
+        &game_state.guards_heavy,
         &game_state.player.transform,
         game_state.player.is_stealth,
     ) {
@@ -196,7 +194,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         && game_state.target.is_dead
         && is_transform_detected(
             &game_state.walls,
-            &game_state.guards_scout,
+            &game_state.guards_heavy,
             &game_state.target.transform,
             false,
         )
@@ -211,14 +209,14 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         .collect::<Vec<(&ggez::graphics::Rect, isize)>>();
 
     game_state
-        .guards_scout
+        .guards_heavy
         .iter_mut()
         .for_each(|guard| guard.update(dt, &aabb_objects));
 }
 
 fn is_transform_detected(
     walls: &Vec<Wall>,
-    guards: &Vec<GuardScout>,
+    guards: &Vec<GuardHeavy>,
     transform: &TransformComponent,
     is_stealth: bool,
 ) -> bool {

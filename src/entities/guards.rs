@@ -1,4 +1,5 @@
 pub mod guard_basic;
+pub mod guard_heavy;
 pub mod guard_scout;
 
 use crate::animation_component::AnimationComponent;

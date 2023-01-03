@@ -46,7 +46,6 @@ pub enum GameState {
     EndScreen,
 }
 
-// TODO: Add more guard types
 // TODO: Add different floor sprites
 // TODO: Add footstep sounds -> guards can hear footsteps
 // TODO: Implement the ability to kill the guards
@@ -59,6 +58,7 @@ pub struct Game {
     target: entities::target::Target,
     guards_basic: Vec<entities::guards::guard_basic::GuardBasic>,
     guards_scout: Vec<entities::guards::guard_scout::GuardScout>,
+    guards_heavy: Vec<entities::guards::guard_heavy::GuardHeavy>,
     walls: Vec<entities::wall::Wall>,
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
@@ -214,6 +214,7 @@ impl Game {
             target,
             guards_basic: vec![],
             guards_scout: vec![],
+            guards_heavy: vec![],
             walls: vec![],
             exit,
             double_press_timer: None,
@@ -251,6 +252,7 @@ impl Game {
 
         self.guards_basic.clear();
         self.guards_scout.clear();
+        self.guards_heavy.clear();
         self.walls.clear();
 
         self.particle_system.reset();
@@ -274,8 +276,14 @@ impl Game {
             .iter()
             .map(|guard_sniper| &guard_sniper.guard);
 
+        let guards_h = self
+            .guards_heavy
+            .iter()
+            .map(|guard_heavy| &guard_heavy.guard);
+
         guards_b
             .chain(guards_s)
+            .chain(guards_h)
             .collect::<Vec<&entities::guards::Guard>>()
     }
 
@@ -290,8 +298,14 @@ impl Game {
             .iter_mut()
             .map(|guard_sniper| &mut guard_sniper.guard);
 
+        let guards_h = self
+            .guards_heavy
+            .iter_mut()
+            .map(|guard_heavy| &mut guard_heavy.guard);
+
         guards_b
             .chain(guards_s)
+            .chain(guards_h)
             .collect::<Vec<&mut entities::guards::Guard>>()
     }
 
@@ -995,6 +1009,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         entities::guards::guard_basic::system(ctx, self, dt);
         entities::guards::guard_scout::system(ctx, self, dt);
+        entities::guards::guard_heavy::system(ctx, self, dt);
 
         look_component::system(self);
 
@@ -1103,6 +1118,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::B => self.debug_draw = !self.debug_draw,
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
+            KeyCode::P => entities::guards::alert_all(ctx, self), // TODO: Delete this [debugging purposes]
             _ => (),
         };
     }

@@ -22,6 +22,7 @@ pub struct GuardScout {
     pub max_move_interval: f32,
     pub move_interval: f32,
     pub wall_move_interval: f32,
+    pub is_using_next_look: bool,
 }
 
 impl GuardScout {
@@ -52,6 +53,7 @@ impl GuardScout {
             max_move_interval: 0.,
             move_interval: 0.,
             wall_move_interval: 0.,
+            is_using_next_look: false,
         }
     }
 
@@ -127,6 +129,7 @@ impl GuardScout {
                 if self.move_interval <= 0. {
                     self.guard.guard_state = GuardState::Walk;
                     self.guard.next_look_component();
+                    self.is_using_next_look = !self.is_using_next_look;
                 } else if self.move_interval <= self.max_move_interval / 2. {
                     self.scout_factor = -1.;
                 }
@@ -144,12 +147,17 @@ impl GuardScout {
                     self.scout_factor = 1.;
 
                     self.guard.next_look_component();
+                    self.is_using_next_look = !self.is_using_next_look;
                 }
 
                 self.do_move(rect_objects);
                 self.set_speed(constants::GUARD_SPEED_SLOW);
             }
             GuardState::Alert => {
+                if !self.is_using_next_look {
+                    self.guard.next_look_component();
+                    self.is_using_next_look = true;
+                }
                 self.do_move(rect_objects);
                 self.set_speed(constants::GUARD_SPEED);
             }

@@ -27,10 +27,12 @@ pub const PLAYER_SPEED: f32 = 3.;
 pub const TARGET_SPEED: f32 = 1.;
 pub const GUARD_SPEED_SLOW: f32 = 0.8;
 pub const GUARD_SPEED: f32 = 1.4;
-pub const GUARD_SPEED_FAST: f32 = 2.8;
+pub const GUARD_SPEED_MEDIUM: f32 = 2.5;
+pub const GUARD_SPEED_FAST: f32 = 3.2;
 pub const GUARD_FOV: f32 = PI / 6.;
 pub const GUARD_FOV_SMALL: f32 = PI / 18.;
 pub const GUARD_VIEW_DISTANCE: f32 = 170.;
+pub const GUARD_VIEW_DISTANCE_MEDIUM: f32 = 250.;
 pub const GUARD_VIEW_DISTANCE_LONG: f32 = 500.;
 
 pub const ANIMATION_SPEED: f32 = 0.1575;
