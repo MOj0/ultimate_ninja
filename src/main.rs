@@ -933,7 +933,7 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
-            DrawParam::from((glam::vec2(740., 570.),)),
+            DrawParam::from((glam::vec2(720., 570.),)),
         )?;
 
         if self.debug_draw {
@@ -1113,6 +1113,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     self.double_press_timer = Some(curr_t);
                 }
             }
+            KeyCode::LeftControl | KeyCode::C => {
+                self.player.set_move_type(entities::player::MoveType::Slow)
+            }
+            KeyCode::LeftShift => self
+                .player
+                .set_move_type(entities::player::MoveType::Sprint),
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,
@@ -1148,6 +1154,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             self.player.set_x_dir(0.);
         } else if keycode == KeyCode::F {
             self.player.set_stealth_intent(false);
+        } else if keycode == KeyCode::LeftControl
+            || keycode == KeyCode::C
+            || keycode == KeyCode::LeftShift
+        {
+            self.player
+                .set_move_type(entities::player::MoveType::Normal);
         }
     }
 

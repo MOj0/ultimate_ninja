@@ -12,6 +12,11 @@ impl MoveComponent {
     }
 
     #[inline]
+    pub fn set_speed(&mut self, speed: f32) {
+        self.speed = speed;
+    }
+
+    #[inline]
     pub fn set_direction(&mut self, direction: glam::Vec2) {
         self.direction = direction;
     }

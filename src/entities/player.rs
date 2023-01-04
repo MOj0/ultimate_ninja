@@ -26,6 +26,15 @@ pub struct Player {
     pub is_stealth: bool,
     pub was_stealth_prev: bool,
     pub footstep_timer: f32,
+
+    pub move_type: MoveType,
+}
+
+#[derive(PartialEq)]
+pub enum MoveType {
+    Slow,
+    Normal,
+    Sprint,
 }
 
 impl Player {
@@ -63,7 +72,7 @@ impl Player {
                 ctx,
                 quad_ctx,
                 100.,
-                0.5,
+                1.,
                 1.,
                 ggez::graphics::Rect::new(10., 10., 200., 20.),
                 ggez::graphics::Color::GREEN,
@@ -72,6 +81,8 @@ impl Player {
             is_stealth: false,
             was_stealth_prev: false,
             footstep_timer: 0.,
+
+            move_type: MoveType::Normal,
         }
     }
 
@@ -105,6 +116,16 @@ impl Player {
     }
 
     #[inline]
+    pub fn set_speed(&mut self, speed: f32) {
+        self.move_component.set_speed(speed);
+    }
+
+    #[inline]
+    pub fn set_move_type(&mut self, move_type: MoveType) {
+        self.move_type = move_type;
+    }
+
+    #[inline]
     pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
@@ -119,13 +140,16 @@ impl Player {
         self.move_component.direction.length() * self.move_component.speed
     }
 
+    fn get_sound_radius_scale(&self) -> f32 {
+        (self.get_move_magnitude() * constants::SOUND_RADIUS_SCALE).powf(1.5)
+    }
+
     pub fn get_sound_radius(&self) -> f32 {
         if self.is_stealth {
             return 0.;
         }
 
-        self.get_move_magnitude() * constants::SPRITE_SIZE as f32 * constants::SOUND_RADIUS_SCALE
-            / 2.
+        self.get_sound_radius_scale() * constants::SPRITE_SIZE as f32 / 2.
     }
 
     pub fn teleport_action(
@@ -155,7 +179,8 @@ impl Player {
     }
 
     pub fn update(&mut self, dt: f32) {
-        self.stamina.update(self.stealth_intent);
+        self.stamina
+            .update(self.stealth_intent || self.move_type == MoveType::Sprint);
 
         if self.stamina.stamina <= 0. {
             self.is_stealth = false;
@@ -166,6 +191,12 @@ impl Player {
                 .set_color(ggez::graphics::Color::new(0., 0., 0., 0.25));
 
             return;
+        }
+
+        match self.move_type {
+            MoveType::Slow => self.set_speed(constants::PLAYER_SPEED_SLOW),
+            MoveType::Normal => self.set_speed(constants::PLAYER_SPEED),
+            MoveType::Sprint => self.set_speed(constants::PLAYER_SPEED_FAST),
         }
 
         self.animation.set_color(ggez::graphics::Color::BLACK);
@@ -201,10 +232,9 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     }
 
     if player.is_moving() && player.footstep_timer <= 0. {
-        game_state.particle_system.set_scale(
-            0,
-            player.get_move_magnitude() * constants::SOUND_RADIUS_SCALE,
-        );
+        game_state
+            .particle_system
+            .set_scale(0, player.get_sound_radius_scale());
 
         game_state
             .particle_system
