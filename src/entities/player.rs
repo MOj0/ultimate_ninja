@@ -28,9 +28,6 @@ pub struct Player {
     pub footstep_timer: f32,
 }
 
-// TODO: Implement hearing for guards
-// TODO: Match the radius of emitted particle with the game's hearing logic
-
 impl Player {
     pub fn new(
         ctx: &mut ggez::Context,
@@ -117,6 +114,16 @@ impl Player {
         self.move_component.direction.length_squared() > 0.
     }
 
+    #[inline]
+    fn get_move_magnitude(&self) -> f32 {
+        self.move_component.direction.length() * self.move_component.speed
+    }
+
+    pub fn get_sound_radius(&self) -> f32 {
+        self.get_move_magnitude() * constants::SPRITE_SIZE as f32 * constants::SOUND_RADIUS_SCALE
+            / 2.
+    }
+
     pub fn teleport_action(
         &mut self,
         ctx: &mut ggez::Context,
@@ -190,9 +197,15 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     }
 
     if player.is_moving() && player.footstep_timer <= 0. {
+        game_state.particle_system.set_scale(
+            0,
+            player.get_move_magnitude() * constants::SOUND_RADIUS_SCALE,
+        );
+
         game_state
             .particle_system
             .emit(0, player.transform.position, 1);
+
         player.footstep_timer = 0.33;
     }
 

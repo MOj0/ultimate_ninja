@@ -46,6 +46,10 @@ impl ParticleSystem {
         self.emitters[emitter_idx].set_pos(pos);
         self.emitters[emitter_idx].emit(n_particles);
     }
+
+    pub fn set_scale(&mut self, emitter_idx: usize, scale: f32) {
+        self.emitters[emitter_idx].set_scale(scale);
+    }
 }
 
 pub struct ParticleEmitter {
@@ -60,7 +64,7 @@ pub struct ParticleEmitter {
 
     // Particles
     color: ggez::graphics::Color, // All particles have the same color
-    initial_scale: f32,
+    scale: f32,
     positions: Vec<glam::Vec2>,
     velocities: Vec<glam::Vec2>,
     scales: Vec<f32>,
@@ -88,7 +92,7 @@ impl ParticleEmitter {
             scale_increase,
             sprite_batch,
             color,
-            initial_scale,
+            scale: initial_scale,
             positions: vec![glam::Vec2::ZERO; max_particles],
             velocities: vec![glam::Vec2::ZERO; max_particles],
             scales: vec![0.; max_particles],
@@ -108,6 +112,11 @@ impl ParticleEmitter {
         self.emitter_position = pos;
     }
 
+    #[inline]
+    pub fn set_scale(&mut self, scale: f32) {
+        self.scale = scale;
+    }
+
     pub fn emit(&mut self, n_particles: u32) {
         let mut created_particles = 0;
 
@@ -116,7 +125,7 @@ impl ParticleEmitter {
                 // Create new particle
                 self.positions[i] = self.emitter_position;
                 self.velocities[i] = util::vec_from_angle(qrand::gen_range(0., 2. * constants::PI));
-                self.scales[i] = self.initial_scale;
+                self.scales[i] = self.scale;
                 *lifetime = qrand::gen_range(self.min_lifetime, self.max_lifetime);
 
                 created_particles += 1;

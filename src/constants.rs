@@ -23,6 +23,7 @@ pub const SPRITE_SCALE: glam::Vec2 = glam::vec2(0.33, 0.33);
 pub const ENTITY_SIZE: f32 = 8.;
 
 pub const PLAYER_SPEED: f32 = 3.;
+pub const SOUND_RADIUS_SCALE: f32 = 0.5;
 
 pub const TARGET_SPEED: f32 = 1.;
 pub const GUARD_SPEED_SLOW: f32 = 0.8;
@@ -55,6 +56,7 @@ pub const BTN_BOTTOM_RIGHT_POS: glam::Vec2 = glam::vec2(450., 500.);
 
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
 
-pub const LEVEL_ANIMATION_TIME: f32 = 4.;
+// pub const LEVEL_ANIMATION_TIME: f32 = 4.; // TODO: Uncomment
+pub const LEVEL_ANIMATION_TIME: f32 = 1.;
 
 pub const LEADERBOARD_WAIT_TIME: f32 = 0.6;

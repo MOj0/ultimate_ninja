@@ -81,7 +81,7 @@ impl GuardScout {
                 .guard
                 .compute_move_component
                 .get_move_direction(&self.guard.transform, rect_objects)
-                .normalize();
+                .normalize_or_zero();
 
             self.move_dir = new_dir;
 
@@ -113,8 +113,49 @@ impl GuardScout {
         }
     }
 
-    pub fn update(&mut self, dt: f32, rect_objects: &Vec<(&ggez::graphics::Rect, isize)>) {
+    fn set_lookout(
+        &mut self,
+        speed_low: f32,
+        speed_high: f32,
+        duration_low: f32,
+        duration_high: f32,
+    ) {
+        let lookout_speed = qrand::gen_range(speed_low, speed_high)
+            * (qrand::gen_range(0., 1.) >= 0.5)
+                .then_some(1.)
+                .unwrap_or(-1.);
+
+        self.guard.guard_state = GuardState::Lookout(lookout_speed);
+
+        self.max_move_interval = qrand::gen_range(duration_low, duration_high);
+        self.move_interval = self.max_move_interval;
+    }
+
+    pub fn update(
+        &mut self,
+        dt: f32,
+        rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
+        player_sound: &TransformComponent,
+    ) {
         match self.guard.guard_state {
+            GuardState::HeardPlayer(dir_to_player) => {
+                self.set_speed(0.);
+
+                let lerp_to_player = util::vec_lerp(
+                    self.move_dir,
+                    dir_to_player,
+                    1. - self.move_interval / self.max_move_interval,
+                );
+
+                self.move_dir = lerp_to_player;
+                self.guard.move_component.set_direction(lerp_to_player);
+
+                self.set_angle(self.guard.move_component.direction);
+
+                if self.move_interval <= 0. {
+                    self.set_lookout(0.01, 0.7, 3., 4.);
+                }
+            }
             GuardState::Lookout(lookout_speed) => {
                 let lookout_dir = util::vec_from_angle(
                     self.guard.transform.angle + dt * lookout_speed * self.scout_factor,
@@ -136,16 +177,9 @@ impl GuardScout {
             }
             GuardState::Walk => {
                 if qrand::gen_range(1., 1000.) <= 12. {
-                    let lookout_speed = qrand::gen_range(1.2, 1.6)
-                        * (qrand::gen_range(0., 1.) >= 0.5)
-                            .then_some(1.)
-                            .unwrap_or(-1.);
+                    self.set_lookout(1.2, 1.6, 12., 16.);
 
-                    self.guard.guard_state = GuardState::Lookout(lookout_speed);
-                    self.max_move_interval = qrand::gen_range(12., 16.);
-                    self.move_interval = self.max_move_interval;
                     self.scout_factor = 1.;
-
                     self.guard.next_look_component();
                     self.is_using_next_look = !self.is_using_next_look;
                 }
@@ -183,6 +217,17 @@ impl GuardScout {
                 .set_animation_state(AnimationState::Active);
         }
 
+        if !matches!(self.guard.guard_state, GuardState::HeardPlayer(_))
+            && util::check_collision(&self.guard.transform, player_sound)
+        {
+            let dir_to_player =
+                (player_sound.position - self.guard.transform.position).normalize_or_zero();
+            self.guard.guard_state = GuardState::HeardPlayer(dir_to_player);
+
+            self.max_move_interval = qrand::gen_range(0.3, 0.4);
+            self.move_interval = self.max_move_interval;
+        }
+
         self.move_interval = (self.move_interval - dt).max(-1.);
         self.wall_move_interval = (self.wall_move_interval - dt).max(-1.);
     }
@@ -217,10 +262,16 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         .map(|wall| (&wall.aabb.rect, wall.transform.grid_index))
         .collect::<Vec<(&ggez::graphics::Rect, isize)>>();
 
+    let (p_position, p_sound_radius) = (
+        game_state.player.transform.position,
+        game_state.player.get_sound_radius(),
+    );
+    let player_sound = TransformComponent::new(p_position, p_sound_radius, -1);
+
     game_state
         .guards_scout
         .iter_mut()
-        .for_each(|guard| guard.update(dt, &aabb_objects));
+        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
 }
 
 fn is_transform_detected(

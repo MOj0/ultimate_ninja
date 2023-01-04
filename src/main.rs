@@ -47,7 +47,6 @@ pub enum GameState {
 }
 
 // TODO: Add different floor sprites
-// TODO: Add footstep sounds -> guards can hear footsteps
 // TODO: Implement the ability to kill the guards
 
 pub struct Game {
@@ -152,7 +151,7 @@ impl Game {
             0.01,
             ggez::graphics::Color::new(1., 1., 1., 0.5),
             0.75,
-            100,
+            2,
             assets.footstep.clone(),
         );
 

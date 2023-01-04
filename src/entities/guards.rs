@@ -28,6 +28,7 @@ pub struct Guard {
 
 #[derive(PartialEq)]
 pub enum GuardState {
+    HeardPlayer(glam::Vec2),
     Lookout(f32),
     Walk,
     Alert,
