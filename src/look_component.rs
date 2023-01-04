@@ -198,7 +198,16 @@ pub fn system(game_state: &mut Game) {
         )
     });
 
-    let transform_look_components = transform_look_basic.chain(transform_look_scout);
+    let transform_look_heavy = game_state.guards_heavy.iter_mut().map(|guard| {
+        (
+            &guard.guard.transform,
+            &mut guard.guard.look_components[guard.guard.look_idx],
+        )
+    });
+
+    let transform_look_components = transform_look_basic
+        .chain(transform_look_scout)
+        .chain(transform_look_heavy);
 
     let aabb_objects = game_state
         .walls

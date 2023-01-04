@@ -120,6 +120,10 @@ impl Player {
     }
 
     pub fn get_sound_radius(&self) -> f32 {
+        if self.is_stealth {
+            return 0.;
+        }
+
         self.get_move_magnitude() * constants::SPRITE_SIZE as f32 * constants::SOUND_RADIUS_SCALE
             / 2.
     }

@@ -1009,9 +1009,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         self.target.update(dt);
 
-        entities::guards::guard_basic::system(ctx, self, dt);
-        entities::guards::guard_scout::system(ctx, self, dt);
-        entities::guards::guard_heavy::system(ctx, self, dt);
+        entities::guards::system(ctx, self, dt);
 
         look_component::system(self);
 

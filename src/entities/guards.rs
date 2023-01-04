@@ -3,8 +3,11 @@ pub mod guard_heavy;
 pub mod guard_scout;
 
 use crate::animation_component::AnimationComponent;
+use crate::animation_component::AnimationState;
 use crate::compute_move_component::ComputeMoveComponent;
 use crate::constants;
+use crate::entities;
+use crate::entities::wall::Wall;
 use crate::entities::AABBCollisionComponent;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
@@ -12,6 +15,9 @@ use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
 use crate::Game;
+use crate::GameState;
+
+use quad_rand as qrand;
 
 pub struct Guard {
     pub guard_state: GuardState,
@@ -24,6 +30,10 @@ pub struct Guard {
     pub look_idx: usize,
 
     pub look_color: ggez::graphics::Color,
+    pub move_dir: glam::Vec2,
+    pub max_move_interval: f32,
+    pub move_interval: f32,
+    pub wall_move_interval: f32,
 }
 
 #[derive(PartialEq)]
@@ -77,6 +87,10 @@ impl Guard {
             )],
             look_idx: 0,
             look_color: ggez::graphics::Color::WHITE,
+            move_dir: glam::Vec2::ZERO,
+            max_move_interval: 0.,
+            move_interval: 0.,
+            wall_move_interval: 0.,
         }
     }
 
@@ -113,6 +127,131 @@ impl Guard {
     pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
     }
+
+    fn set_lookout(
+        &mut self,
+        speed_low: f32,
+        speed_high: f32,
+        duration_low: f32,
+        duration_high: f32,
+    ) {
+        let lookout_speed = qrand::gen_range(speed_low, speed_high)
+            * (qrand::gen_range(0., 1.) >= 0.5)
+                .then_some(1.)
+                .unwrap_or(-1.);
+
+        self.guard_state = GuardState::Lookout(lookout_speed);
+
+        self.max_move_interval = qrand::gen_range(duration_low, duration_high);
+        self.move_interval = self.max_move_interval;
+    }
+
+    fn do_move(
+        &mut self,
+        rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
+        move_interval_low: f32,
+        move_interval_high: f32,
+    ) {
+        let min_ray_scale = self.look_components[self.look_idx]
+            .ray_scales
+            .iter()
+            .min_by(|&&a, &&b| ((a * 100.) as i32).cmp(&((b * 100.) as i32)))
+            .unwrap_or(&1.);
+
+        let is_close_to_wall = *min_ray_scale < 0.8;
+
+        if self.move_interval <= 0. || is_close_to_wall && self.wall_move_interval <= 0. {
+            let new_dir = self
+                .compute_move_component
+                .get_move_direction(&self.transform, rect_objects)
+                .normalize_or_zero();
+
+            self.move_dir = new_dir;
+
+            self.max_move_interval = qrand::gen_range(move_interval_low, move_interval_high);
+            self.move_interval = self.max_move_interval;
+
+            if is_close_to_wall {
+                self.wall_move_interval = if self.guard_state == GuardState::Walk {
+                    0.5
+                } else {
+                    0.25
+                };
+            }
+        } else {
+            let lerped_dir = if self.max_move_interval != 0. {
+                util::vec_lerp(
+                    self.move_component.direction,
+                    self.move_dir,
+                    1. - self.move_interval / self.max_move_interval,
+                )
+            } else {
+                self.move_component.direction
+            };
+
+            self.move_component.set_direction_normalized(lerped_dir);
+            self.set_angle(self.move_component.direction);
+        }
+    }
+
+    fn do_heard_player(&mut self, dir_to_player: glam::Vec2) {
+        self.set_speed(0.);
+
+        let lerp_to_player = util::vec_lerp(
+            self.move_dir,
+            dir_to_player,
+            1. - self.move_interval / self.max_move_interval,
+        );
+
+        self.move_dir = lerp_to_player;
+        self.move_component.set_direction(lerp_to_player);
+
+        self.set_angle(self.move_component.direction);
+
+        if self.move_interval <= 0. {
+            self.set_lookout(0.01, 0.7, 3., 4.);
+        }
+    }
+
+    fn do_lookout(&mut self, lookout_dir: glam::Vec2) {
+        self.set_speed(0.);
+        self.move_dir = lookout_dir;
+
+        self.move_component.set_direction(lookout_dir);
+        self.set_angle(self.move_component.direction);
+    }
+
+    fn update(&mut self, dt: f32, player_sound: &TransformComponent) {
+        entities::move_entity(
+            &mut self.transform,
+            &self.move_component,
+            self.aabb.colliding_axis,
+        );
+
+        self.aabb.rect.move_to(self.transform.position);
+
+        self.animation.update(dt);
+
+        if self.move_component.speed == 0. {
+            self.animation.set_animation_state(AnimationState::Idle);
+        } else {
+            self.animation.set_animation_state(AnimationState::Active);
+        }
+
+        if !matches!(self.guard_state, GuardState::HeardPlayer(_))
+            && util::check_collision(&self.transform, player_sound)
+        {
+            let dir_to_player =
+                (player_sound.position - self.transform.position).normalize_or_zero();
+            self.guard_state = GuardState::HeardPlayer(dir_to_player);
+
+            self.max_move_interval = qrand::gen_range(0.3, 0.4);
+            self.move_interval = self.max_move_interval;
+        }
+
+        self.move_interval = (self.move_interval - dt).max(-1.);
+        self.wall_move_interval = (self.wall_move_interval - dt).max(-1.);
+    }
 }
 
 pub fn alert_all(ctx: &mut ggez::Context, game_state: &mut Game) {
@@ -126,4 +265,81 @@ pub fn alert_all(ctx: &mut ggez::Context, game_state: &mut Game) {
 
     game_state.dead_target_detected = true;
     game_state.sound_collection.play(ctx, 6).unwrap();
+}
+
+pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
+    if is_transform_detected(
+        &game_state.walls,
+        &game_state.get_all_guards(),
+        &game_state.player.transform,
+        game_state.player.is_stealth,
+    ) {
+        game_state.game_state = GameState::GameOver;
+        game_state.sound_collection.play(ctx, 4).unwrap();
+    }
+
+    if !game_state.dead_target_detected
+        && game_state.target.is_dead
+        && is_transform_detected(
+            &game_state.walls,
+            &game_state.get_all_guards(),
+            &game_state.target.transform,
+            false,
+        )
+    {
+        alert_all(ctx, game_state);
+    }
+
+    let aabb_objects = game_state
+        .walls
+        .iter()
+        .map(|wall| (&wall.aabb.rect, wall.transform.grid_index))
+        .collect::<Vec<(&ggez::graphics::Rect, isize)>>();
+
+    let (p_position, p_sound_radius) = (
+        game_state.player.transform.position,
+        game_state.player.get_sound_radius(),
+    );
+    let player_sound = TransformComponent::new(p_position, p_sound_radius, -1);
+
+    game_state
+        .guards_basic
+        .iter_mut()
+        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+
+    game_state
+        .guards_scout
+        .iter_mut()
+        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+
+    game_state
+        .guards_heavy
+        .iter_mut()
+        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+}
+
+pub fn is_transform_detected(
+    walls: &Vec<Wall>,
+    guards: &Vec<&Guard>,
+    transform: &TransformComponent,
+    is_stealth: bool,
+) -> bool {
+    // If transform is stealth, it cannot be detected
+    if is_stealth {
+        return false;
+    }
+
+    let aabb_objects = walls
+        .iter()
+        .map(|wall| &wall.aabb.rect)
+        .collect::<Vec<&ggez::graphics::Rect>>();
+
+    guards.iter().any(|guard| {
+        util::check_spotted(
+            &guard.look_components[guard.look_idx],
+            &guard.transform,
+            transform,
+            &aabb_objects,
+        )
+    })
 }
