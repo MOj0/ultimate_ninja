@@ -23,6 +23,9 @@ pub struct Assets {
     pub ultimate_ninja: graphics::Image,
 
     pub footstep: graphics::Image,
+
+    pub floor1: graphics::Image,
+    pub floor2: graphics::Image,
 }
 
 impl Assets {
@@ -51,6 +54,9 @@ impl Assets {
 
         let footstep = graphics::Image::new(ctx, quad_ctx, "textures/footstep.png").unwrap();
 
+        let floor1 = graphics::Image::new(ctx, quad_ctx, "textures/floor1.png").unwrap();
+        let floor2 = graphics::Image::new(ctx, quad_ctx, "textures/floor2.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -74,6 +80,9 @@ impl Assets {
             ultimate_ninja,
 
             footstep,
+
+            floor1,
+            floor2,
         }
     }
 }

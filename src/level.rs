@@ -6,6 +6,7 @@ use crate::entities::guards::guard_scout::GuardScout;
 use crate::entities::player::Player;
 use crate::entities::target::Target;
 use crate::entities::wall::Wall;
+use crate::tile_component::TileComponent;
 use crate::SpriteComponent;
 use std::io::Read;
 
@@ -52,12 +53,18 @@ pub fn load_level(
     file.read_to_string(&mut level).unwrap();
 
     let (mut x, mut y): (i32, i32) = (0, 0);
+    let mut floor_tile = '-';
+
     for char in level.chars() {
         let position = glam::vec2(
             (x as u32 * constants::LEVEL_BLOCK_SIZE) as f32,
             (y as u32 * constants::LEVEL_BLOCK_SIZE) as f32,
         );
         let position_center = position + glam::Vec2::splat(constants::LEVEL_BLOCK_SIZE as f32 / 2.);
+
+        if char != 'p' && char != 't' && char != 'g' && char != 's' && char != 'h' && char != 'e' {
+            floor_tile = char;
+        }
 
         match char {
             'p' => {
@@ -128,6 +135,23 @@ pub fn load_level(
             }
             _ => (),
         }
+
+        match floor_tile {
+            '1' => game_state.floor_tiles.push(TileComponent::new(
+                position,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                SpriteComponent::new(assets.floor1.clone(), ggez::graphics::Color::WHITE),
+            )),
+            '2' => game_state.floor_tiles.push(TileComponent::new(
+                position,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                constants::LEVEL_BLOCK_SIZE as f32,
+                SpriteComponent::new(assets.floor2.clone(), ggez::graphics::Color::WHITE),
+            )),
+            _ => (),
+        }
+
         x += 1;
     }
 }

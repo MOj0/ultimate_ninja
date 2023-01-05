@@ -15,6 +15,7 @@ mod sound_collection;
 mod sprite_component;
 mod stamina_component;
 mod teleport_component;
+mod tile_component;
 mod transform_component;
 mod util;
 
@@ -47,8 +48,6 @@ pub enum GameState {
     EndScreen,
 }
 
-// TODO: Add different floor sprites
-
 pub struct Game {
     game_state: GameState,
     assets: assets::Assets,
@@ -59,6 +58,7 @@ pub struct Game {
     guards_scout: Vec<entities::guards::guard_scout::GuardScout>,
     guards_heavy: Vec<entities::guards::guard_heavy::GuardHeavy>,
     walls: Vec<entities::wall::Wall>,
+    floor_tiles: Vec<tile_component::TileComponent>,
     exit: entities::exit::Exit,
     double_press_timer: Option<f32>,
     sound_collection: SoundCollection,
@@ -205,7 +205,7 @@ impl Game {
         )
         .unwrap();
 
-        let game_state = Game {
+        Game {
             game_state,
             assets,
             camera,
@@ -215,6 +215,7 @@ impl Game {
             guards_scout: vec![],
             guards_heavy: vec![],
             walls: vec![],
+            floor_tiles: vec![],
             exit,
             double_press_timer: None,
             sound_collection,
@@ -231,9 +232,7 @@ impl Game {
             level_times: [0.; level::LEVEL_COUNT],
             leaderboard: None,
             player_name: String::new(),
-        };
-
-        game_state
+        }
     }
 
     pub fn reset_state(&mut self, is_proceed: bool) {
@@ -254,6 +253,8 @@ impl Game {
         self.guards_heavy.clear();
 
         self.walls.clear();
+
+        self.floor_tiles.clear();
 
         self.particle_system.reset();
 
@@ -617,6 +618,28 @@ When you complete your mission, a pathway to the next level will appear"
     ) -> Result<(), ggez::GameError> {
         use graphics::DrawParam;
         let mut n_objects_drawn = 0;
+
+        self.floor_tiles
+            .iter()
+            .map(|floor_tile| {
+                sprite_component::render(
+                    ctx,
+                    quad_ctx,
+                    &floor_tile.sprite,
+                    DrawParam::default()
+                        .dest(self.camera.world_position(floor_tile.transform.position))
+                        .scale(floor_tile.sprite.scale)
+                        .color(graphics::Color::new(
+                            floor_tile.brightness,
+                            floor_tile.brightness
+                                * self.are_guards_alerted.then(|| 0.5).unwrap_or(1.),
+                            floor_tile.brightness
+                                * self.are_guards_alerted.then(|| 0.5).unwrap_or(1.),
+                            1.,
+                        )),
+                )
+            })
+            .count();
 
         if self.player.teleport.location.is_some() {
             sprite_component::render_sprite(
