@@ -117,6 +117,7 @@ impl Game {
             audio::Source::new(ctx, "sounds/target_killed.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/dead_target_detected.ogg").unwrap(),
             audio::Source::new(ctx, "sounds/level_exit.ogg").unwrap(),
+            audio::Source::new(ctx, "sounds/footstep.ogg").unwrap(),
         ];
         sounds
             .iter_mut()
@@ -309,7 +310,7 @@ impl Game {
     }
 
     pub fn play_kill_effect(&mut self, ctx: &mut Context, pos: glam::Vec2) {
-        self.sound_collection.play(ctx, 5).unwrap();
+        self.sound_collection.play(ctx, 5).unwrap_or_default();
         self.particle_system.emit(1, pos, 50);
     }
 

@@ -168,7 +168,7 @@ impl Player {
             self.teleport.set_location(self.transform.clone());
             self.stamina.stamina -= constants::TELEPORT_COST_INTIAL;
 
-            sound_collection.play(ctx, 2).unwrap();
+            sound_collection.play(ctx, 2).unwrap_or_default();
         } else if self.stamina.stamina > constants::TELEPORT_COST {
             particle_system.emit(2, self.transform.position, 8);
 
@@ -178,7 +178,7 @@ impl Player {
             self.teleport.location = None;
             self.stamina.stamina -= constants::TELEPORT_COST;
 
-            sound_collection.play(ctx, 3).unwrap();
+            sound_collection.play(ctx, 3).unwrap_or_default();
         }
     }
 
@@ -286,6 +286,14 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
             .particle_system
             .emit(0, player.transform.position, 1);
 
+        match player.move_type {
+            MoveType::Slow => sound_collection.set_volume_to(ctx, 8, 0.1),
+            MoveType::Normal => sound_collection.set_volume_to(ctx, 8, 0.5),
+            MoveType::Sprint => sound_collection.set_volume_to(ctx, 8, 0.9),
+        }
+        .unwrap_or_default();
+
+        sound_collection.play(ctx, 8).unwrap_or_default();
         player.footstep_timer = 0.33;
     }
 
@@ -293,7 +301,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     if !target.is_dead() && util::check_collision(&player.transform, &target.transform) {
         target.set_dead(true);
 
-        sound_collection.play(ctx, 5).unwrap();
+        sound_collection.play(ctx, 5).unwrap_or_default();
 
         game_state
             .particle_system
@@ -305,7 +313,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     exit.player_exited =
         target.is_dead() && util::check_collision(&player.transform, &exit.transform);
     if exit.player_exited {
-        sound_collection.play(ctx, 7).unwrap();
+        sound_collection.play(ctx, 7).unwrap_or_default();
     }
 
     player.footstep_timer = (player.footstep_timer - dt).max(-1.);
@@ -317,11 +325,11 @@ fn handle_stealth_sound(
     sound_collection: &mut SoundCollection,
 ) {
     if player.is_stealth && !player.was_stealth_prev {
-        sound_collection.play(ctx, 0).unwrap();
+        sound_collection.play(ctx, 0).unwrap_or_default();
         player.was_stealth_prev = true;
     }
     if !player.is_stealth && player.was_stealth_prev {
-        sound_collection.play(ctx, 1).unwrap();
+        sound_collection.play(ctx, 1).unwrap_or_default();
         player.was_stealth_prev = false;
     }
 }

@@ -297,7 +297,7 @@ pub fn alert_all(ctx: &mut ggez::Context, game_state: &mut Game) {
         });
 
     game_state.are_guards_alerted = true;
-    game_state.sound_collection.play(ctx, 6).unwrap();
+    game_state.sound_collection.play(ctx, 6).unwrap_or_default();
 }
 
 pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
@@ -308,7 +308,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         game_state.player.is_stealth,
     ) {
         game_state.game_state = GameState::GameOver;
-        game_state.sound_collection.play(ctx, 4).unwrap();
+        game_state.sound_collection.play(ctx, 4).unwrap_or_default();
     }
 
     if !game_state.are_guards_alerted
