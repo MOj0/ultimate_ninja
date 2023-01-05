@@ -63,14 +63,12 @@ fn get_colliding_vec_components_all(
     walls
         .iter()
         .filter(|wall| {
-            let n_cells_in_row =
-                (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize;
+            let row = (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize;
 
             let abs_diff = (wall.transform.grid_index - transform.grid_index).abs();
             let abs_diff_bottom_row =
-                (wall.transform.grid_index - transform.grid_index + n_cells_in_row).abs();
-            let abs_diff_top_row =
-                (wall.transform.grid_index - transform.grid_index - n_cells_in_row).abs();
+                (wall.transform.grid_index - transform.grid_index + row).abs();
+            let abs_diff_top_row = (wall.transform.grid_index - transform.grid_index - row).abs();
 
             abs_diff <= 1 || abs_diff_bottom_row <= 1 || abs_diff_top_row <= 1
         })

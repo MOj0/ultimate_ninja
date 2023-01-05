@@ -6,11 +6,13 @@ use crate::animation_component::AnimationComponent;
 use crate::animation_component::AnimationState;
 use crate::compute_move_component::ComputeMoveComponent;
 use crate::constants;
+use crate::dead_component::DeadComponent;
 use crate::entities;
 use crate::entities::wall::Wall;
 use crate::entities::AABBCollisionComponent;
 use crate::look_component::LookComponent;
 use crate::move_component::MoveComponent;
+use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
@@ -23,6 +25,7 @@ pub struct Guard {
     pub guard_state: GuardState,
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
+    pub dead_component: DeadComponent,
     pub move_component: MoveComponent,
     pub aabb: AABBCollisionComponent,
     pub compute_move_component: ComputeMoveComponent,
@@ -63,6 +66,14 @@ impl Guard {
                 &assets,
                 util::compute_animation_duration(constants::GUARD_SPEED),
                 color,
+            ),
+            dead_component: DeadComponent::new(
+                SpriteComponent::new(
+                    assets.dead.clone(),
+                    ggez::graphics::Color::new(0.5, 0.5, 0.5, 0.75),
+                )
+                .scale(constants::SPRITE_SCALE),
+                false,
             ),
             move_component: MoveComponent::new(constants::GUARD_SPEED),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
@@ -126,6 +137,24 @@ impl Guard {
     #[inline]
     pub fn set_colliding_vec_components(&mut self, colliding_axis: (bool, bool)) {
         self.aabb.colliding_axis = colliding_axis;
+    }
+
+    #[inline]
+    pub fn is_dead(&self) -> bool {
+        self.dead_component.is_dead
+    }
+
+    #[inline]
+    pub fn set_dead(&mut self, is_dead: bool) {
+        self.dead_component.is_dead = is_dead;
+    }
+
+    pub fn get_curr_animation_frame(&self) -> &SpriteComponent {
+        if self.dead_component.is_dead {
+            return &self.dead_component.sprite;
+        }
+
+        self.animation.get_curr_frame()
     }
 
     fn set_lookout(
@@ -222,6 +251,10 @@ impl Guard {
     }
 
     fn update(&mut self, dt: f32, player_sound: &TransformComponent) {
+        if self.dead_component.is_dead {
+            return;
+        }
+
         entities::move_entity(
             &mut self.transform,
             &self.move_component,
@@ -263,7 +296,7 @@ pub fn alert_all(ctx: &mut ggez::Context, game_state: &mut Game) {
             guard.set_look_color(ggez::graphics::Color::RED);
         });
 
-    game_state.dead_target_detected = true;
+    game_state.are_guards_alerted = true;
     game_state.sound_collection.play(ctx, 6).unwrap();
 }
 
@@ -278,8 +311,8 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         game_state.sound_collection.play(ctx, 4).unwrap();
     }
 
-    if !game_state.dead_target_detected
-        && game_state.target.is_dead
+    if !game_state.are_guards_alerted
+        && game_state.target.is_dead()
         && is_transform_detected(
             &game_state.walls,
             &game_state.get_all_guards(),
@@ -287,6 +320,30 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
             false,
         )
     {
+        alert_all(ctx, game_state);
+    }
+
+    let guards = game_state.get_all_guards();
+    let alive_guards = game_state
+        .get_all_guards()
+        .iter()
+        .filter(|guard| !guard.is_dead())
+        .map(|guard| *guard)
+        .collect::<Vec<&Guard>>();
+    let dead_guards = guards.iter().filter(|guard| guard.is_dead());
+
+    let dead_guard_detected = dead_guards
+        .map(|dead_guard| {
+            is_transform_detected(
+                &game_state.walls,
+                &alive_guards,
+                &dead_guard.transform,
+                false,
+            )
+        })
+        .any(|is_detected| is_detected);
+
+    if !game_state.are_guards_alerted && dead_guard_detected {
         alert_all(ctx, game_state);
     }
 
@@ -335,11 +392,12 @@ pub fn is_transform_detected(
         .collect::<Vec<&ggez::graphics::Rect>>();
 
     guards.iter().any(|guard| {
-        util::check_spotted(
-            &guard.look_components[guard.look_idx],
-            &guard.transform,
-            transform,
-            &aabb_objects,
-        )
+        !guard.is_dead()
+            && util::check_spotted(
+                &guard.look_components[guard.look_idx],
+                &guard.transform,
+                transform,
+                &aabb_objects,
+            )
     })
 }

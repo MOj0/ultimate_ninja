@@ -24,12 +24,20 @@ impl GuardBasic {
         }
     }
 
+    pub fn is_dead(&self) -> bool {
+        self.guard.is_dead()
+    }
+
     pub fn update(
         &mut self,
         dt: f32,
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
         player_sound: &TransformComponent,
     ) {
+        if self.guard.dead_component.is_dead {
+            return;
+        }
+
         match self.guard.guard_state {
             GuardState::HeardPlayer(dir_to_player) => self.guard.do_heard_player(dir_to_player),
             GuardState::Lookout(lookout_speed) => {

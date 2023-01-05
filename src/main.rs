@@ -4,6 +4,7 @@ mod camera_component;
 mod collision_component;
 mod compute_move_component;
 mod constants;
+mod dead_component;
 mod entities;
 mod level;
 mod look_component;
@@ -47,7 +48,6 @@ pub enum GameState {
 }
 
 // TODO: Add different floor sprites
-// TODO: Implement the ability to kill the guards
 
 pub struct Game {
     game_state: GameState,
@@ -65,7 +65,7 @@ pub struct Game {
     mouse_input_handler: MouseInputHandler,
     particle_system: particle_system::ParticleSystem,
     level_idx: usize,
-    dead_target_detected: bool,
+    are_guards_alerted: bool,
     debug_draw: bool,
     is_touch_joystick_activated: bool,
     menu_rectangle: graphics::Mesh,
@@ -84,11 +84,7 @@ impl Game {
         let assets = Assets::load(ctx, quad_ctx);
 
         let camera = camera_component::CameraComponent::new(
-            TransformComponent::new(
-                glam::Vec2::ZERO,
-                0.,
-                util::compute_grid_index(&glam::Vec2::ZERO),
-            ),
+            glam::Vec2::ZERO,
             glam::vec2(
                 (constants::WIDTH / 2) as f32,
                 (constants::HEIGHT / 2) as f32,
@@ -224,7 +220,7 @@ impl Game {
             mouse_input_handler,
             particle_system,
             level_idx,
-            dead_target_detected: false,
+            are_guards_alerted: false,
             debug_draw: false,
             is_touch_joystick_activated: false,
             menu_rectangle,
@@ -247,14 +243,15 @@ impl Game {
         self.player.is_stealth = false;
         self.player.stealth_intent = false;
 
-        self.target.is_dead = false;
-        self.dead_target_detected = false;
+        self.target.set_dead(false);
+        self.are_guards_alerted = false;
 
         self.exit.player_exited = false;
 
         self.guards_basic.clear();
         self.guards_scout.clear();
         self.guards_heavy.clear();
+
         self.walls.clear();
 
         self.particle_system.reset();
@@ -311,6 +308,11 @@ impl Game {
             .collect::<Vec<&mut entities::guards::Guard>>()
     }
 
+    pub fn play_kill_effect(&mut self, ctx: &mut Context, pos: glam::Vec2) {
+        self.sound_collection.play(ctx, 5).unwrap();
+        self.particle_system.emit(1, pos, 50);
+    }
+
     fn next_level(
         &mut self,
         ctx: &mut Context,
@@ -347,9 +349,9 @@ impl Game {
 
         self.camera.set_lerp_delta(0.05);
         if self.curr_level_time >= constants::LEVEL_ANIMATION_TIME / 2. {
-            self.camera.update(self.target.transform.clone());
+            self.camera.update(self.target.transform.position);
         } else {
-            self.camera.update(self.player.transform.clone());
+            self.camera.update(self.player.transform.position);
         }
 
         self.curr_level_time -= dt;
@@ -658,7 +660,7 @@ When you complete your mission, a pathway to the next level will appear"
                 sprite_component::render_sprite(
                     ctx,
                     quad_ctx,
-                    &guard.animation.get_curr_frame(),
+                    &guard.get_curr_animation_frame(),
                     DrawParam::default()
                         .dest(self.camera.world_position(guard.transform.position))
                         .rotation(-guard.transform.angle),
@@ -666,10 +668,11 @@ When you complete your mission, a pathway to the next level will appear"
             })
             .count();
 
-        // Draw look mesh compositions for basic guards
+        // Draw look mesh compositions
         if self.game_state != GameState::LevelAnimation {
             all_guards
                 .iter()
+                .filter(|guard| !guard.is_dead())
                 .map(|guard| {
                     guard.look_components[guard.look_idx]
                         .fov_mesh_composition
@@ -770,10 +773,8 @@ When you complete your mission, a pathway to the next level will appear"
                         .scale(wall.sprite.scale)
                         .color(graphics::Color::new(
                             wall.brightness,
-                            wall.brightness
-                                * self.dead_target_detected.then_some(0.5).unwrap_or(1.),
-                            wall.brightness
-                                * self.dead_target_detected.then_some(0.5).unwrap_or(1.),
+                            wall.brightness * self.are_guards_alerted.then_some(0.5).unwrap_or(1.),
+                            wall.brightness * self.are_guards_alerted.then_some(0.5).unwrap_or(1.),
                             1.,
                         )),
                 )
@@ -806,7 +807,7 @@ When you complete your mission, a pathway to the next level will appear"
             .unwrap();
         }
 
-        if self.target.is_dead {
+        if self.target.is_dead() {
             sprite_component::render_sprite(
                 ctx,
                 quad_ctx,
@@ -1119,6 +1120,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::LeftShift => self
                 .player
                 .set_move_type(entities::player::MoveType::Sprint),
+            KeyCode::Q => entities::player::try_attack_guard(ctx, self),
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,

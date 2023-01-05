@@ -71,7 +71,7 @@ pub fn load_level(
 
                 game_state
                     .camera
-                    .update(game_state.player.transform.clone());
+                    .update(game_state.player.transform.position);
             }
             't' => {
                 game_state.target =

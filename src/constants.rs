@@ -22,6 +22,7 @@ pub const SPRITE_SCALE: glam::Vec2 = glam::vec2(0.33, 0.33);
 
 pub const ENTITY_SIZE: f32 = 8.;
 
+pub const PLAYER_ATTACK_RANGE: f32 = 70.;
 pub const PLAYER_SPEED_SLOW: f32 = 1.;
 pub const PLAYER_SPEED: f32 = 3.;
 pub const PLAYER_SPEED_FAST: f32 = 4.5;

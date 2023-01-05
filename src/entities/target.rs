@@ -1,5 +1,6 @@
 use crate::animation_component::{AnimationComponent, AnimationState};
 use crate::constants;
+use crate::dead_component::DeadComponent;
 use crate::entities;
 use crate::entities::AABBCollisionComponent;
 use crate::look_component::LookComponent;
@@ -14,12 +15,10 @@ use quad_rand as qrand;
 pub struct Target {
     pub transform: TransformComponent,
     pub animation: AnimationComponent,
-    pub sprite_dead: SpriteComponent,
+    pub dead_component: DeadComponent,
     pub move_component: MoveComponent,
     pub aabb: AABBCollisionComponent,
     pub look: LookComponent,
-
-    pub is_dead: bool,
 
     pub target_dir: glam::Vec2,
     pub max_move_interval: f32,
@@ -39,8 +38,11 @@ impl Target {
                 util::compute_animation_duration(constants::TARGET_SPEED),
                 color,
             ),
-            sprite_dead: SpriteComponent::new(assets.dead.clone(), ggez::graphics::Color::GREEN)
-                .scale(constants::SPRITE_SCALE),
+            dead_component: DeadComponent::new(
+                SpriteComponent::new(assets.dead.clone(), ggez::graphics::Color::GREEN)
+                    .scale(constants::SPRITE_SCALE),
+                false,
+            ),
             move_component: MoveComponent::new(constants::TARGET_SPEED),
             aabb: AABBCollisionComponent::new(ggez::graphics::Rect::new(
                 position.x,
@@ -54,7 +56,6 @@ impl Target {
                 constants::GUARD_VIEW_DISTANCE,
                 constants::N_FOV_RAYS,
             ),
-            is_dead: false,
             target_dir: glam::Vec2::ZERO,
             max_move_interval: 0.,
             move_interval: 0.,
@@ -73,10 +74,20 @@ impl Target {
         self.aabb.colliding_axis = colliding_axis;
     }
 
+    #[inline]
+    pub fn is_dead(&self) -> bool {
+        self.dead_component.is_dead
+    }
+
+    #[inline]
+    pub fn set_dead(&mut self, is_dead: bool) {
+        self.dead_component.is_dead = is_dead;
+    }
+
     /// Since target can be dead, it has an additional sprite for dead state
     pub fn get_curr_animation_frame(&self) -> &SpriteComponent {
-        if self.is_dead {
-            return &self.sprite_dead;
+        if self.dead_component.is_dead {
+            return &self.dead_component.sprite;
         }
 
         self.animation.get_curr_frame()
@@ -114,7 +125,7 @@ impl Target {
     }
 
     pub fn update(&mut self, dt: f32) {
-        if self.is_dead {
+        if self.dead_component.is_dead {
             return;
         }
 

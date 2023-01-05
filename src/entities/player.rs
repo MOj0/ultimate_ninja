@@ -26,6 +26,8 @@ pub struct Player {
     pub is_stealth: bool,
     pub was_stealth_prev: bool,
     pub footstep_timer: f32,
+    pub attack_range: f32,
+    pub guard_to_attack_idx: Option<usize>,
 
     pub move_type: MoveType,
 }
@@ -81,6 +83,8 @@ impl Player {
             is_stealth: false,
             was_stealth_prev: false,
             footstep_timer: 0.,
+            attack_range: constants::PLAYER_ATTACK_RANGE,
+            guard_to_attack_idx: None,
 
             move_type: MoveType::Normal,
         }
@@ -184,6 +188,7 @@ impl Player {
 
         if self.stamina.stamina <= 0. {
             self.is_stealth = false;
+            self.move_type = MoveType::Normal;
         }
 
         if self.is_stealth {
@@ -221,6 +226,47 @@ impl Player {
 }
 
 pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
+    let (player_pos, player_grid_idx, player_attack_range) = (
+        game_state.player.transform.position,
+        game_state.player.transform.grid_index,
+        game_state.player.attack_range,
+    );
+
+    let guards = game_state.get_all_guards();
+
+    let closest_guard = guards
+        .iter()
+        .enumerate()
+        .filter(|(_, guard)| {
+            let row = (constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize;
+
+            let abs_diff = (guard.transform.grid_index - player_grid_idx).abs();
+            let abs_diff_bottom_row = (guard.transform.grid_index - player_grid_idx + row).abs();
+            let abs_diff_top_row = (guard.transform.grid_index - player_grid_idx - row).abs();
+
+            abs_diff <= 1 || abs_diff_bottom_row <= 1 || abs_diff_top_row <= 1
+        })
+        .filter(|(_, guard)| {
+            !guard.is_dead()
+                && (guard.transform.position - player_pos).length_squared()
+                    <= player_attack_range.powi(2)
+        })
+        .min_by(|(_, g1), (_, g2)| {
+            let dist_to_player1 = (g1.transform.position - player_pos).length_squared();
+            let dist_to_player2 = (g2.transform.position - player_pos).length_squared();
+
+            (dist_to_player1 as i32).cmp(&(dist_to_player2 as i32))
+        });
+
+    if let Some((guard_idx, guard)) = closest_guard {
+        let pos = guard.transform.position;
+        game_state.camera.update(pos);
+
+        game_state.player.guard_to_attack_idx = Some(guard_idx);
+    } else {
+        game_state.player.guard_to_attack_idx = None;
+    }
+
     let player = &mut game_state.player;
     player.update(dt);
 
@@ -244,8 +290,8 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     }
 
     let target = &mut game_state.target;
-    if !target.is_dead && util::check_collision(&player.transform, &target.transform) {
-        target.is_dead = true;
+    if !target.is_dead() && util::check_collision(&player.transform, &target.transform) {
+        target.set_dead(true);
 
         sound_collection.play(ctx, 5).unwrap();
 
@@ -257,7 +303,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     let exit = &mut game_state.exit;
 
     exit.player_exited =
-        target.is_dead && util::check_collision(&player.transform, &exit.transform);
+        target.is_dead() && util::check_collision(&player.transform, &exit.transform);
     if exit.player_exited {
         sound_collection.play(ctx, 7).unwrap();
     }
@@ -277,5 +323,15 @@ fn handle_stealth_sound(
     if !player.is_stealth && player.was_stealth_prev {
         sound_collection.play(ctx, 1).unwrap();
         player.was_stealth_prev = false;
+    }
+}
+
+pub fn try_attack_guard(ctx: &mut ggez::Context, game_state: &mut Game) {
+    if let Some(guard_to_attack_idx) = game_state.player.guard_to_attack_idx {
+        let guard = &mut game_state.get_all_guards_mut()[guard_to_attack_idx];
+        guard.set_dead(true);
+
+        let pos = guard.transform.position;
+        game_state.play_kill_effect(ctx, pos);
     }
 }

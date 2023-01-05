@@ -184,26 +184,38 @@ impl LookComponent {
 }
 
 pub fn system(game_state: &mut Game) {
-    let transform_look_basic = game_state.guards_basic.iter_mut().map(|guard| {
-        (
-            &guard.guard.transform,
-            &mut guard.guard.look_components[guard.guard.look_idx],
-        )
-    });
+    let transform_look_basic = game_state
+        .guards_basic
+        .iter_mut()
+        .filter(|guard| !guard.is_dead())
+        .map(|guard| {
+            (
+                &guard.guard.transform,
+                &mut guard.guard.look_components[guard.guard.look_idx],
+            )
+        });
 
-    let transform_look_scout = game_state.guards_scout.iter_mut().map(|guard| {
-        (
-            &guard.guard.transform,
-            &mut guard.guard.look_components[guard.guard.look_idx],
-        )
-    });
+    let transform_look_scout = game_state
+        .guards_scout
+        .iter_mut()
+        .filter(|guard| !guard.is_dead())
+        .map(|guard| {
+            (
+                &guard.guard.transform,
+                &mut guard.guard.look_components[guard.guard.look_idx],
+            )
+        });
 
-    let transform_look_heavy = game_state.guards_heavy.iter_mut().map(|guard| {
-        (
-            &guard.guard.transform,
-            &mut guard.guard.look_components[guard.guard.look_idx],
-        )
-    });
+    let transform_look_heavy = game_state
+        .guards_heavy
+        .iter_mut()
+        .filter(|guard| !guard.is_dead())
+        .map(|guard| {
+            (
+                &guard.guard.transform,
+                &mut guard.guard.look_components[guard.guard.look_idx],
+            )
+        });
 
     let transform_look_components = transform_look_basic
         .chain(transform_look_scout)
