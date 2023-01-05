@@ -165,8 +165,8 @@ impl Guard {
         duration_high: f32,
     ) {
         let lookout_speed = qrand::gen_range(speed_low, speed_high)
-            * (qrand::gen_range(0., 1.) >= 0.5)
-                .then_some(1.)
+            * (qrand::gen_range::<f32>(0., 1.) >= 0.5)
+                .then(|| 1.)
                 .unwrap_or(-1.);
 
         self.guard_state = GuardState::Lookout(lookout_speed);

@@ -110,7 +110,7 @@ impl ComputeMoveComponent {
             .rays
             .iter()
             .enumerate()
-            .filter_map(|(i, ray)| (!ray_collisions[i]).then_some(*ray))
+            .filter_map(|(i, ray)| (!ray_collisions[i]).then(|| *ray))
             .collect::<Vec<glam::Vec2>>();
 
         if available_rays.len() == 0 {

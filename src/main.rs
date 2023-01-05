@@ -774,8 +774,8 @@ When you complete your mission, a pathway to the next level will appear"
                         .scale(wall.sprite.scale)
                         .color(graphics::Color::new(
                             wall.brightness,
-                            wall.brightness * self.are_guards_alerted.then_some(0.5).unwrap_or(1.),
-                            wall.brightness * self.are_guards_alerted.then_some(0.5).unwrap_or(1.),
+                            wall.brightness * self.are_guards_alerted.then(|| 0.5).unwrap_or(1.),
+                            wall.brightness * self.are_guards_alerted.then(|| 0.5).unwrap_or(1.),
                             1.,
                         )),
                 )
@@ -1335,7 +1335,7 @@ async fn get_leaderboard() -> Vec<PlayerEntry> {
     let response_str = response.text().await.unwrap();
 
     let mut leaderboard: Vec<PlayerEntry> = serde_json::from_str(&response_str).unwrap();
-    leaderboard.sort_by(|a, b| a.time.total_cmp(&b.time));
+    leaderboard.sort_by(|a, b| ((a.time * 10.) as i32).cmp(&((b.time * 10.) as i32)));
     leaderboard.truncate(9); // Only display 9 entries
 
     leaderboard
