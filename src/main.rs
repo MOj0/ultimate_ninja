@@ -392,7 +392,10 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Ultimate Ninja".into(), 42.),
-            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.3525,
+                constants::HEIGHT as f32 * 0.0833,
+            )),
         )?;
 
         graphics::draw(
@@ -405,7 +408,13 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Play".into(), 36.),
-            graphics::DrawParam::default().dest(constants::BTN_PLAY_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_PLAY_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.115,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
         )?;
 
         graphics::draw(
@@ -418,7 +427,13 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Info".into(), 36.),
-            graphics::DrawParam::default().dest(constants::BTN_INFO_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_INFO_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.115,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
         )?;
 
         graphics::draw(
@@ -432,15 +447,23 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Leaderboard".into(), 36.),
-            graphics::DrawParam::default()
-                .dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(25., 20.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BOTTOM_RIGHT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.03425,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
         )?;
 
         graphics::draw(
             ctx,
             quad_ctx,
             &self.assets.ultimate_ninja,
-            graphics::DrawParam::default().dest(glam::vec2(150., 200.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.1875,
+                constants::HEIGHT as f32 * 0.33,
+            )),
         )?;
 
         graphics::draw(
@@ -455,15 +478,21 @@ impl Game {
                 quad_ctx,
                 &self.assets.checkmark,
                 graphics::DrawParam::default()
-                    .dest(constants::BTN_BOTTOM_LEFT_POS1 + glam::vec2(5., 5.)),
+                    .dest(constants::BTN_BOTTOM_LEFT_POS1 + glam::vec2(5., 5.))
+                    .scale(glam::Vec2::splat(constants::WIDTH as f32 / 800.)),
             )?;
         }
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Mute".into(), 36.),
-            graphics::DrawParam::default()
-                .dest(constants::BTN_BOTTOM_LEFT_POS1 + glam::vec2(60., 10.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BOTTOM_LEFT_POS1
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.075,
+                        constants::HEIGHT as f32 * 0.0166,
+                    ),
+            ),
         )?;
 
         graphics::draw(
@@ -478,15 +507,21 @@ impl Game {
                 quad_ctx,
                 &self.assets.checkmark,
                 graphics::DrawParam::default()
-                    .dest(constants::BTN_BOTTOM_LEFT_POS2 + glam::vec2(5., 5.)),
+                    .dest(constants::BTN_BOTTOM_LEFT_POS2 + glam::vec2(5., 5.))
+                    .scale(glam::Vec2::splat(constants::WIDTH as f32 / 800.)),
             )?;
         }
         graphics::draw(
             ctx,
             quad_ctx,
             &util::make_text("Particles".into(), 36.),
-            graphics::DrawParam::default()
-                .dest(constants::BTN_BOTTOM_LEFT_POS2 + glam::vec2(60., 10.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BOTTOM_LEFT_POS2
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.075,
+                        constants::HEIGHT as f32 * 0.0166,
+                    ),
+            ),
         )?;
 
         Ok(())
@@ -501,7 +536,10 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Ultimate Ninja".into(), 42.),
-            graphics::DrawParam::default().dest(glam::vec2(250., 50.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.3525,
+                constants::HEIGHT as f32 * 0.0833,
+            )),
         )?;
 
         graphics::draw(
@@ -514,7 +552,13 @@ impl Game {
             ctx,
             quad_ctx,
             &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(constants::BTN_BACK_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BACK_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.1,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
         )?;
 
         graphics::draw(
@@ -522,7 +566,10 @@ impl Game {
             quad_ctx,
             &self.menu_rectangle,
             graphics::DrawParam::default()
-                .dest(glam::vec2(30., 250.))
+                .dest(glam::vec2(
+                    constants::WIDTH as f32 * 0.0375,
+                    constants::HEIGHT as f32 * 0.4166,
+                ))
                 .scale(glam::vec2(3., 4.1)),
         )?;
         graphics::draw(
@@ -540,7 +587,10 @@ When you complete your mission, a pathway to the next level will appear"
                     .into(),
                 18.,
             ),
-            graphics::DrawParam::default().dest(glam::vec2(80., 270.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.1,
+                constants::HEIGHT as f32 * 0.45,
+            )),
         )?;
 
         Ok(())
@@ -555,7 +605,10 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text("Leaderboard".into(), 42.),
-            graphics::DrawParam::default().dest(glam::vec2(280., 50.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.35,
+                constants::HEIGHT as f32 * 0.0833,
+            )),
         )?;
 
         graphics::draw(
@@ -568,7 +621,13 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(constants::BTN_BACK_POS + glam::vec2(80., 20.)),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BACK_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.1,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
         )?;
 
         graphics::draw(
@@ -576,7 +635,10 @@ When you complete your mission, a pathway to the next level will appear"
             quad_ctx,
             &self.menu_rectangle,
             graphics::DrawParam::default()
-                .dest(glam::vec2(30., 250.))
+                .dest(glam::vec2(
+                    constants::WIDTH as f32 * 0.0375,
+                    constants::HEIGHT as f32 * 0.4166,
+                ))
                 .scale(glam::vec2(3., 4.55)),
         )?;
 
@@ -597,7 +659,10 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text(leaderboard_str, 18.),
-            graphics::DrawParam::default().dest(glam::vec2(80., 270.)),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.1,
+                constants::HEIGHT as f32 * 0.45,
+            )),
         )?;
 
         self.curr_level_time += ggez::timer::delta(ctx).as_secs_f32();
@@ -921,7 +986,10 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &self.menu_rectangle,
                 graphics::DrawParam::default()
-                    .dest(glam::vec2(320., 250.))
+                    .dest(glam::vec2(
+                        constants::WIDTH as f32 * 0.4,
+                        constants::HEIGHT as f32 * 0.4166,
+                    ))
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
@@ -931,7 +999,10 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &util::make_text(format!("Game Over"), 32.),
                 DrawParam::default()
-                    .dest(glam::vec2(350., 270.))
+                    .dest(glam::vec2(
+                        constants::WIDTH as f32 * 0.47,
+                        constants::HEIGHT as f32 * 0.45,
+                    ))
                     .color(graphics::Color::RED),
             )
             .unwrap();
@@ -949,7 +1020,13 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("Menu"), 32.),
-                DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(35., 20.)),
+                DrawParam::default().dest(
+                    constants::BTN_BOTTOM_LEFT_POS
+                        + glam::vec2(
+                            constants::WIDTH as f32 * 0.1,
+                            constants::HEIGHT as f32 * 0.033,
+                        ),
+                ),
             )
             .unwrap();
 
@@ -966,7 +1043,13 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("Restart"), 32.),
-                DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(35., 20.)),
+                DrawParam::default().dest(
+                    constants::BTN_BOTTOM_RIGHT_POS
+                        + glam::vec2(
+                            constants::WIDTH as f32 * 0.09,
+                            constants::HEIGHT as f32 * 0.033,
+                        ),
+                ),
             )
             .unwrap();
         } else if self.game_state == GameState::Pause {
@@ -975,7 +1058,10 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &self.menu_rectangle,
                 graphics::DrawParam::default()
-                    .dest(glam::vec2(320., 250.))
+                    .dest(glam::vec2(
+                        constants::WIDTH as f32 * 0.4,
+                        constants::HEIGHT as f32 * 0.4166,
+                    ))
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
@@ -985,7 +1071,10 @@ When you complete your mission, a pathway to the next level will appear"
                 quad_ctx,
                 &util::make_text(format!("Pause"), 32.),
                 DrawParam::default()
-                    .dest(glam::vec2(370., 270.))
+                    .dest(glam::vec2(
+                        constants::WIDTH as f32 * 0.5,
+                        constants::HEIGHT as f32 * 0.45,
+                    ))
                     .color(graphics::Color::WHITE),
             )
             .unwrap();
@@ -1003,7 +1092,13 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("Menu"), 32.),
-                DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(35., 20.)),
+                DrawParam::default().dest(
+                    constants::BTN_BOTTOM_LEFT_POS
+                        + glam::vec2(
+                            constants::WIDTH as f32 * 0.1,
+                            constants::HEIGHT as f32 * 0.033,
+                        ),
+                ),
             )
             .unwrap();
 
@@ -1020,7 +1115,13 @@ When you complete your mission, a pathway to the next level will appear"
                 ctx,
                 quad_ctx,
                 &util::make_text(format!("Restart"), 32.),
-                DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(35., 20.)),
+                DrawParam::default().dest(
+                    constants::BTN_BOTTOM_RIGHT_POS
+                        + glam::vec2(
+                            constants::WIDTH as f32 * 0.09,
+                            constants::HEIGHT as f32 * 0.033,
+                        ),
+                ),
             )
             .unwrap();
         }
@@ -1029,7 +1130,10 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
-            DrawParam::from((glam::vec2(720., 570.),)),
+            DrawParam::from((glam::vec2(
+                constants::WIDTH as f32 * 0.9,
+                constants::HEIGHT as f32 * 0.95,
+            ),)),
         )?;
 
         if self.debug_draw {
@@ -1421,6 +1525,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 fn main() -> GameResult {
     let conf = ggez::conf::Conf::default()
         .window_title("Ultimate Ninja".to_owned())
+        .window_width(constants::WIDTH as i32)
+        .window_height(constants::HEIGHT as i32)
         .cache(Some(include_bytes!("resources.tar")));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
