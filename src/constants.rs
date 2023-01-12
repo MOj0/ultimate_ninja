@@ -1,4 +1,4 @@
-pub const CONFIG_FILENAME: &str = "settings/config.json";
+pub const CONFIG_FILENAME: &str = "config.json";
 
 // pub const WIDTH: u32 = 1024;
 // pub const HEIGHT: u32 = 768;
