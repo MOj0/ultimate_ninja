@@ -1,3 +1,5 @@
+pub const CONFIG_FILENAME: &str = "settings/config.json";
+
 // pub const WIDTH: u32 = 1024;
 // pub const HEIGHT: u32 = 768;
 pub const WIDTH: u32 = 800;
@@ -49,13 +51,17 @@ pub const TELEPORT_COST: f32 = 50.;
 
 pub const N_FOV_RAYS: u32 = 10;
 
-pub const BTN_DIM: glam::Vec2 = glam::vec2(250., 75.);
+pub const BTN_DIM_RECT: glam::Vec2 = glam::vec2(250., 75.);
+pub const BTN_DIM_SQUARE: glam::Vec2 = glam::vec2(50., 50.);
 
 pub const BTN_PLAY_POS: glam::Vec2 = glam::vec2(450., 200.);
 pub const BTN_INFO_POS: glam::Vec2 = glam::vec2(450., 350.);
 pub const BTN_BACK_POS: glam::Vec2 = glam::vec2(30., 120.);
 pub const BTN_BOTTOM_LEFT_POS: glam::Vec2 = glam::vec2(100., 500.);
 pub const BTN_BOTTOM_RIGHT_POS: glam::Vec2 = glam::vec2(450., 500.);
+
+pub const BTN_BOTTOM_LEFT_POS1: glam::Vec2 = glam::vec2(20., 430.);
+pub const BTN_BOTTOM_LEFT_POS2: glam::Vec2 = glam::vec2(20., 500.);
 
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
 

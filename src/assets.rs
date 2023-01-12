@@ -26,6 +26,8 @@ pub struct Assets {
 
     pub floor1: graphics::Image,
     pub floor2: graphics::Image,
+
+    pub checkmark: graphics::Image,
 }
 
 impl Assets {
@@ -57,6 +59,8 @@ impl Assets {
         let floor1 = graphics::Image::new(ctx, quad_ctx, "textures/floor1.png").unwrap();
         let floor2 = graphics::Image::new(ctx, quad_ctx, "textures/floor2.png").unwrap();
 
+        let checkmark = graphics::Image::new(ctx, quad_ctx, "textures/checkmark.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -83,6 +87,8 @@ impl Assets {
 
             floor1,
             floor2,
+
+            checkmark,
         }
     }
 }

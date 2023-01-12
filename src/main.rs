@@ -35,6 +35,11 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+// TODO: Take 4k display resolution into account
+// TODO: Make overlay (guard-marker, arrows, text)
+// TODO: Make tutorial levels
+// TODO: Prevent leaderboard cheating
+
 #[derive(PartialEq)]
 pub enum GameState {
     Menu,
@@ -69,6 +74,7 @@ pub struct Game {
     debug_draw: bool,
     is_touch_joystick_activated: bool,
     menu_rectangle: graphics::Mesh,
+    menu_square: graphics::Mesh,
     grid_line: graphics::Mesh,
     n_objects: usize,
     curr_level_time: f32,
@@ -79,6 +85,8 @@ pub struct Game {
 
 impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
+        let (is_muted, are_particles_activated) = read_config(constants::CONFIG_FILENAME);
+
         let game_state = GameState::Menu;
 
         let assets = Assets::load(ctx, quad_ctx);
@@ -125,7 +133,7 @@ impl Game {
 
         let sound_collection = SoundCollection {
             sounds,
-            is_on: true,
+            is_on: !is_muted,
         };
 
         let mouse_input_handler = MouseInputHandler::new(
@@ -138,7 +146,7 @@ impl Game {
             80.,
         );
 
-        let mut particle_system = particle_system::ParticleSystem::new();
+        let mut particle_system = particle_system::ParticleSystem::new(are_particles_activated);
         let particle_image = util::make_particle_image(ctx, quad_ctx);
 
         let player_move_particle_emitter = particle_system::ParticleEmitter::new(
@@ -184,9 +192,24 @@ impl Game {
             ctx,
             quad_ctx,
             graphics::DrawMode::fill(),
-            graphics::Rect::new(0., 0., constants::BTN_DIM.x, constants::BTN_DIM.y),
+            graphics::Rect::new(0., 0., constants::BTN_DIM_RECT.x, constants::BTN_DIM_RECT.y),
             10.,
             graphics::Color::new(0.25, 0.25, 0.25, 0.6),
+        )
+        .unwrap();
+
+        let menu_square = graphics::Mesh::new_rounded_rectangle(
+            ctx,
+            quad_ctx,
+            graphics::DrawMode::fill(),
+            graphics::Rect::new(
+                0.,
+                0.,
+                constants::BTN_DIM_SQUARE.x,
+                constants::BTN_DIM_SQUARE.y,
+            ),
+            10.,
+            graphics::Color::new(0.4, 0.4, 0.4, 0.8),
         )
         .unwrap();
 
@@ -226,6 +249,7 @@ impl Game {
             debug_draw: false,
             is_touch_joystick_activated: false,
             menu_rectangle,
+            menu_square,
             grid_line,
             n_objects: 0,
             curr_level_time: 0.,
@@ -403,6 +427,7 @@ impl Game {
             &self.menu_rectangle,
             graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS),
         )?;
+
         graphics::draw(
             ctx,
             quad_ctx,
@@ -416,6 +441,52 @@ impl Game {
             quad_ctx,
             &self.assets.ultimate_ninja,
             graphics::DrawParam::default().dest(glam::vec2(150., 200.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_square,
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS1),
+        )?;
+        if !self.sound_collection.is_on {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.assets.checkmark,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_LEFT_POS1 + glam::vec2(5., 5.)),
+            )?;
+        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Mute".into(), 36.),
+            graphics::DrawParam::default()
+                .dest(constants::BTN_BOTTOM_LEFT_POS1 + glam::vec2(60., 10.)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_square,
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS2),
+        )?;
+        if self.particle_system.is_activated {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.assets.checkmark,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_LEFT_POS2 + glam::vec2(5., 5.)),
+            )?;
+        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Particles".into(), 36.),
+            graphics::DrawParam::default()
+                .dest(constants::BTN_BOTTOM_LEFT_POS2 + glam::vec2(60., 10.)),
         )?;
 
         Ok(())
@@ -1001,6 +1072,12 @@ When you complete your mission, a pathway to the next level will appear"
 
         Ok(())
     }
+
+    fn write_config(&self, filename: &str) {
+        let json = serde_json::json!({ "mute": !self.sound_collection.is_on, "particles": self.particle_system.is_activated });
+
+        std::fs::write(filename, serde_json::to_string_pretty(&json).unwrap()).unwrap();
+    }
 }
 
 impl ggez::event::EventHandler<ggez::GameError> for Game {
@@ -1212,6 +1289,25 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             MouseButton::Left => {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
+                if self.game_state == GameState::Menu {
+                    if util::rect_contains_point(
+                        constants::BTN_DIM_SQUARE,
+                        constants::BTN_BOTTOM_LEFT_POS1,
+                        glam::vec2(x, y),
+                    ) {
+                        self.sound_collection.is_on = !self.sound_collection.is_on;
+                        self.write_config(constants::CONFIG_FILENAME);
+                    } else if util::rect_contains_point(
+                        constants::BTN_DIM_SQUARE,
+                        constants::BTN_BOTTOM_LEFT_POS2,
+                        glam::vec2(x, y),
+                    ) {
+                        self.particle_system
+                            .set_activated(!self.particle_system.is_activated);
+                        self.write_config(constants::CONFIG_FILENAME);
+                    }
+                }
+
                 if self.game_state == GameState::Menu
                     || self.game_state == GameState::Info
                     || self.game_state == GameState::Leaderboard
@@ -1379,4 +1475,20 @@ async fn submit_time(username: String, time: f32) {
         .unwrap();
 
     println!("{}", response.text().await.unwrap());
+}
+
+fn read_config(filename: &str) -> (bool, bool) {
+    let data = std::fs::read_to_string(filename).unwrap_or_default();
+    let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
+    match config {
+        serde_json::Value::Object(m) => {
+            let is_muted = m["mute"].as_bool().unwrap_or_default();
+            let are_particles_activated = m["particles"].as_bool().unwrap_or(true);
+
+            return (is_muted, are_particles_activated);
+        }
+        _ => (),
+    }
+
+    (false, true)
 }

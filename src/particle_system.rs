@@ -6,11 +6,20 @@ use quad_rand as qrand;
 
 pub struct ParticleSystem {
     emitters: Vec<ParticleEmitter>,
+    pub is_activated: bool,
 }
 
 impl ParticleSystem {
-    pub fn new() -> Self {
-        Self { emitters: vec![] }
+    pub fn new(is_activated: bool) -> Self {
+        Self {
+            emitters: vec![],
+            is_activated,
+        }
+    }
+
+    #[inline]
+    pub fn set_activated(&mut self, is_activated: bool) {
+        self.is_activated = is_activated;
     }
 
     #[inline]
@@ -43,6 +52,10 @@ impl ParticleSystem {
     }
 
     pub fn emit(&mut self, emitter_idx: usize, pos: glam::Vec2, n_particles: u32) {
+        if !self.is_activated {
+            return;
+        }
+
         self.emitters[emitter_idx].set_pos(pos);
         self.emitters[emitter_idx].emit(n_particles);
     }

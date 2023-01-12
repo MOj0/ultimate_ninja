@@ -70,16 +70,24 @@ impl MouseInputHandler {
         let mouse_vec = glam::vec2(mx, my);
 
         if *game_state == GameState::Menu {
-            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_PLAY_POS, mouse_vec) {
+            if util::rect_contains_point(
+                constants::BTN_DIM_RECT,
+                constants::BTN_PLAY_POS,
+                mouse_vec,
+            ) {
                 return Some(GameState::Game);
             }
 
-            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_INFO_POS, mouse_vec) {
+            if util::rect_contains_point(
+                constants::BTN_DIM_RECT,
+                constants::BTN_INFO_POS,
+                mouse_vec,
+            ) {
                 return Some(GameState::Info);
             }
 
             if util::rect_contains_point(
-                constants::BTN_DIM,
+                constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
             ) {
@@ -88,20 +96,24 @@ impl MouseInputHandler {
         }
 
         if *game_state == GameState::Info || *game_state == GameState::Leaderboard {
-            if util::rect_contains_point(constants::BTN_DIM, constants::BTN_BACK_POS, mouse_vec) {
+            if util::rect_contains_point(
+                constants::BTN_DIM_RECT,
+                constants::BTN_BACK_POS,
+                mouse_vec,
+            ) {
                 return Some(GameState::Menu);
             }
         }
 
         if *game_state == GameState::GameOver || *game_state == GameState::Pause {
             if util::rect_contains_point(
-                constants::BTN_DIM,
+                constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_LEFT_POS,
                 mouse_vec,
             ) {
                 return Some(GameState::Menu);
             } else if util::rect_contains_point(
-                constants::BTN_DIM,
+                constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
             ) {
@@ -111,7 +123,7 @@ impl MouseInputHandler {
 
         if *game_state == GameState::EndScreen {
             if util::rect_contains_point(
-                constants::BTN_DIM,
+                constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
             ) {
@@ -119,7 +131,7 @@ impl MouseInputHandler {
             }
 
             if util::rect_contains_point(
-                constants::BTN_DIM,
+                constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_LEFT_POS,
                 mouse_vec,
             ) {
