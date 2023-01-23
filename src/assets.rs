@@ -28,6 +28,9 @@ pub struct Assets {
     pub floor2: graphics::Image,
 
     pub checkmark: graphics::Image,
+
+    pub marker: graphics::Image,
+    pub arrow: graphics::Image,
 }
 
 impl Assets {
@@ -61,6 +64,9 @@ impl Assets {
 
         let checkmark = graphics::Image::new(ctx, quad_ctx, "textures/checkmark.png").unwrap();
 
+        let marker = graphics::Image::new(ctx, quad_ctx, "textures/marker.png").unwrap();
+        let arrow = graphics::Image::new(ctx, quad_ctx, "textures/arrow.png").unwrap();
+
         Assets {
             stand,
             walk_l1,
@@ -89,6 +95,9 @@ impl Assets {
             floor2,
 
             checkmark,
+
+            marker,
+            arrow,
         }
     }
 }

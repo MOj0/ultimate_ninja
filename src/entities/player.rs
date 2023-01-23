@@ -170,7 +170,7 @@ impl Player {
 
             sound_collection.play(ctx, 2).unwrap_or_default();
         } else if self.stamina.stamina > constants::TELEPORT_COST {
-            particle_system.emit(2, self.transform.position, 8);
+            particle_system.emit(3, self.transform.position, 16);
 
             self.transform
                 .set(self.teleport.location.as_ref().unwrap().position);
@@ -262,8 +262,13 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
         let pos = guard.transform.position;
         game_state.camera.update(pos);
 
+        game_state.overlay_system.set_active_at(0, true);
+        game_state.overlay_system.set_pos_at(0, pos);
+
         game_state.player.guard_to_attack_idx = Some(guard_idx);
     } else {
+        game_state.overlay_system.set_active_at(0, false);
+
         game_state.player.guard_to_attack_idx = None;
     }
 
@@ -280,16 +285,22 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     if player.is_moving() && player.footstep_timer <= 0. {
         game_state
             .particle_system
-            .set_scale(0, player.get_sound_radius_scale());
+            .set_scale(1, player.get_sound_radius_scale());
 
         game_state
             .particle_system
-            .emit(0, player.transform.position, 1);
+            .emit(1, player.transform.position, 1);
 
         match player.move_type {
             MoveType::Slow => sound_collection.set_volume_to(ctx, 8, 0.1),
             MoveType::Normal => sound_collection.set_volume_to(ctx, 8, 0.5),
-            MoveType::Sprint => sound_collection.set_volume_to(ctx, 8, 0.9),
+            MoveType::Sprint => {
+                game_state
+                    .particle_system
+                    .emit(0, player.transform.position, 10);
+
+                sound_collection.set_volume_to(ctx, 8, 0.9)
+            }
         }
         .unwrap_or_default();
 
@@ -305,7 +316,7 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
 
         game_state
             .particle_system
-            .emit(1, target.transform.position, 50);
+            .emit(2, target.transform.position, 50);
     }
 
     let exit = &mut game_state.exit;

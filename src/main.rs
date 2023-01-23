@@ -10,6 +10,7 @@ mod level;
 mod look_component;
 mod mouse_input_handler;
 mod move_component;
+mod overlay_system;
 mod particle_system;
 mod sound_collection;
 mod sprite_component;
@@ -35,9 +36,8 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Take 4k display resolution into account
-// TODO: Make overlay (guard-marker, arrows, text)
 // TODO: Make tutorial levels
+// TODO: Take 4k display resolution into account
 // TODO: Prevent leaderboard cheating
 
 #[derive(PartialEq)]
@@ -69,6 +69,7 @@ pub struct Game {
     sound_collection: SoundCollection,
     mouse_input_handler: MouseInputHandler,
     particle_system: particle_system::ParticleSystem,
+    overlay_system: overlay_system::OverlaySystem,
     level_idx: usize,
     are_guards_alerted: bool,
     debug_draw: bool,
@@ -151,6 +152,17 @@ impl Game {
 
         let player_move_particle_emitter = particle_system::ParticleEmitter::new(
             glam::Vec2::ZERO,
+            0.05,
+            0.5,
+            0.,
+            ggez::graphics::Color::WHITE,
+            2.,
+            100,
+            particle_image.clone(),
+        );
+
+        let player_footstep_particle_emitter = particle_system::ParticleEmitter::new(
+            glam::Vec2::ZERO,
             0.1,
             0.12,
             0.01,
@@ -174,7 +186,7 @@ impl Game {
         let teleport_particle_emitter = particle_system::ParticleEmitter::new(
             glam::Vec2::ZERO,
             0.1,
-            0.3,
+            0.5,
             0.,
             ggez::graphics::Color::WHITE,
             5.,
@@ -183,8 +195,49 @@ impl Game {
         );
 
         particle_system.add_emitter(player_move_particle_emitter);
+        particle_system.add_emitter(player_footstep_particle_emitter);
         particle_system.add_emitter(target_killed_particle_emitter);
         particle_system.add_emitter(teleport_particle_emitter);
+
+        let mut overlay_system = overlay_system::OverlaySystem::new();
+
+        let marker =
+            sprite_component::SpriteComponent::new(assets.marker.clone(), graphics::Color::WHITE)
+                .scale(glam::Vec2::splat(0.4));
+        let overlay_marker = overlay_system::OverlayItem::new(
+            Some(marker),
+            None,
+            glam::vec2(0., 0.),
+            0.,
+            0.03,
+            |_: f32| 0.4,
+        );
+
+        let arrow =
+            sprite_component::SpriteComponent::new(assets.arrow.clone(), graphics::Color::WHITE);
+        let overlay_arrow = overlay_system::OverlayItem::new(
+            Some(arrow),
+            None,
+            glam::vec2(150., 150.),
+            0.,
+            0.,
+            |x: f32| x.sin().abs(),
+        );
+
+        let overlay_text = overlay_system::OverlayItem::new(
+            None,
+            Some("This is a text".to_owned()),
+            glam::vec2(300., 300.),
+            0.,
+            0.,
+            |x: f32| x.sin().abs(),
+        );
+
+        overlay_system.add_item(overlay_marker);
+        overlay_system.add_item(overlay_arrow);
+        overlay_system.add_item(overlay_text);
+        overlay_system.set_active_at(1, true);
+        overlay_system.set_active_at(2, true);
 
         let level_idx = 0;
 
@@ -244,6 +297,7 @@ impl Game {
             sound_collection,
             mouse_input_handler,
             particle_system,
+            overlay_system,
             level_idx,
             are_guards_alerted: false,
             debug_draw: false,
@@ -336,7 +390,7 @@ impl Game {
 
     pub fn play_kill_effect(&mut self, ctx: &mut Context, pos: glam::Vec2) {
         self.sound_collection.play(ctx, 5).unwrap_or_default();
-        self.particle_system.emit(1, pos, 50);
+        self.particle_system.emit(2, pos, 50);
     }
 
     fn next_level(
@@ -980,6 +1034,8 @@ When you complete your mission, a pathway to the next level will appear"
 
         self.particle_system.draw(ctx, quad_ctx, &self.camera)?;
 
+        self.overlay_system.draw(ctx, quad_ctx, &self.camera)?;
+
         if self.game_state == GameState::GameOver {
             graphics::draw(
                 ctx,
@@ -994,18 +1050,15 @@ When you complete your mission, a pathway to the next level will appear"
             )
             .unwrap();
 
-            graphics::draw(
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
-                &util::make_text(format!("Game Over"), 32.),
-                DrawParam::default()
-                    .dest(glam::vec2(
-                        constants::WIDTH as f32 * 0.47,
-                        constants::HEIGHT as f32 * 0.45,
-                    ))
-                    .color(graphics::Color::RED),
-            )
-            .unwrap();
+                &util::make_text("Game Over".to_owned(), 32.),
+                glam::vec2(
+                    constants::WIDTH as f32 * 0.47,
+                    constants::HEIGHT as f32 * 0.45,
+                ),
+                Some(graphics::Color::RED),
+            );
 
             graphics::draw(
                 ctx,
@@ -1016,19 +1069,17 @@ When you complete your mission, a pathway to the next level will appear"
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
-            graphics::draw(
+
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
-                &util::make_text(format!("Menu"), 32.),
-                DrawParam::default().dest(
-                    constants::BTN_BOTTOM_LEFT_POS
-                        + glam::vec2(
-                            constants::WIDTH as f32 * 0.1,
-                            constants::HEIGHT as f32 * 0.033,
-                        ),
-                ),
-            )
-            .unwrap();
+                &util::make_text("Menu".to_owned(), 32.),
+                constants::BTN_BOTTOM_LEFT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.1,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+                None,
+            );
 
             graphics::draw(
                 ctx,
@@ -1039,19 +1090,17 @@ When you complete your mission, a pathway to the next level will appear"
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
-            graphics::draw(
+
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
-                &util::make_text(format!("Restart"), 32.),
-                DrawParam::default().dest(
-                    constants::BTN_BOTTOM_RIGHT_POS
-                        + glam::vec2(
-                            constants::WIDTH as f32 * 0.09,
-                            constants::HEIGHT as f32 * 0.033,
-                        ),
-                ),
-            )
-            .unwrap();
+                &util::make_text("Restart".to_owned(), 32.),
+                constants::BTN_BOTTOM_RIGHT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.09,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+                None,
+            );
         } else if self.game_state == GameState::Pause {
             graphics::draw(
                 ctx,
@@ -1065,20 +1114,6 @@ When you complete your mission, a pathway to the next level will appear"
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
-
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &util::make_text(format!("Pause"), 32.),
-                DrawParam::default()
-                    .dest(glam::vec2(
-                        constants::WIDTH as f32 * 0.5,
-                        constants::HEIGHT as f32 * 0.45,
-                    ))
-                    .color(graphics::Color::WHITE),
-            )
-            .unwrap();
-
             graphics::draw(
                 ctx,
                 quad_ctx,
@@ -1091,50 +1126,55 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::draw(
                 ctx,
                 quad_ctx,
-                &util::make_text(format!("Menu"), 32.),
-                DrawParam::default().dest(
-                    constants::BTN_BOTTOM_LEFT_POS
-                        + glam::vec2(
-                            constants::WIDTH as f32 * 0.1,
-                            constants::HEIGHT as f32 * 0.033,
-                        ),
-                ),
-            )
-            .unwrap();
-
-            graphics::draw(
-                ctx,
-                quad_ctx,
                 &self.menu_rectangle,
                 graphics::DrawParam::default()
                     .dest(constants::BTN_BOTTOM_RIGHT_POS)
                     .color(graphics::Color::BLACK),
             )
             .unwrap();
-            graphics::draw(
+
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
-                &util::make_text(format!("Restart"), 32.),
-                DrawParam::default().dest(
-                    constants::BTN_BOTTOM_RIGHT_POS
-                        + glam::vec2(
-                            constants::WIDTH as f32 * 0.09,
-                            constants::HEIGHT as f32 * 0.033,
-                        ),
+                &util::make_text("Pause".to_owned(), 32.),
+                glam::vec2(
+                    constants::WIDTH as f32 * 0.5,
+                    constants::HEIGHT as f32 * 0.45,
                 ),
-            )
-            .unwrap();
+                None,
+            );
+
+            graphics::queue_text(
+                ctx,
+                &util::make_text("Menu".to_owned(), 32.),
+                constants::BTN_BOTTOM_LEFT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.1,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+                None,
+            );
+
+            graphics::queue_text(
+                ctx,
+                &util::make_text("Restart".to_owned(), 32.),
+                constants::BTN_BOTTOM_RIGHT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.09,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+                None,
+            );
         }
 
-        graphics::draw(
+        graphics::queue_text(
             ctx,
-            quad_ctx,
             &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
-            DrawParam::from((glam::vec2(
+            glam::vec2(
                 constants::WIDTH as f32 * 0.9,
                 constants::HEIGHT as f32 * 0.95,
-            ),)),
-        )?;
+            ),
+            None,
+        );
 
         if self.debug_draw {
             graphics::draw(
@@ -1173,6 +1213,14 @@ When you complete your mission, a pathway to the next level will appear"
                 )?;
             }
         }
+
+        graphics::draw_queued_text(
+            ctx,
+            quad_ctx,
+            graphics::DrawParam::default(),
+            None,
+            graphics::default_filter(ctx),
+        )?;
 
         Ok(())
     }
@@ -1222,6 +1270,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         entities::exit::system(self, dt);
 
         particle_system::system(self, dt);
+
+        overlay_system::system(self, dt);
 
         camera_component::system(self);
 
