@@ -264,6 +264,7 @@ impl Guard {
             &mut self.transform,
             &self.move_component,
             self.aabb.colliding_axis,
+            dt,
         );
 
         self.aabb.rect.move_to(self.transform.position);

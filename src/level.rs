@@ -80,10 +80,6 @@ pub fn load_level(
                     &assets,
                     ggez::graphics::Color::BLACK,
                 );
-
-                game_state
-                    .camera
-                    .update(game_state.player.transform.position);
             }
             't' => {
                 game_state.target =
@@ -237,7 +233,7 @@ pub fn system(game_state: &mut Game) {
             if (game_state.player.transform.position - glam::vec2(500., 460.)).length() > 50. {
                 pos = game_state.guards_basic[0].guard.transform.position
                     + glam::vec2(0., constants::ENTITY_SIZE * 3.);
-                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl key\nEliminate with Q";
+                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl or C key\nEliminate with Q or E";
             }
 
             game_state.overlay_system.set_pos_at(
@@ -256,6 +252,9 @@ pub fn system(game_state: &mut Game) {
             if game_state.exit.player_exited {
                 game_state.overlay_system.set_active_at(1, false);
                 game_state.overlay_system.set_active_at(2, false);
+
+                game_state.is_skip_tutorial = true;
+                game_state.write_config(constants::CONFIG_FILENAME);
             } else if game_state.target.is_dead()
                 || (game_state.player.transform.position - glam::vec2(100., 380.)).length() < 30.
             {

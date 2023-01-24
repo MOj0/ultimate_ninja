@@ -1322,7 +1322,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         overlay_system::system(self, dt);
 
-        camera_component::system(self);
+        camera_component::system(self, dt);
 
         self.curr_level_time += dt;
 
@@ -1424,7 +1424,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::LeftShift => self
                 .player
                 .set_move_type(entities::player::MoveType::Sprint),
-            KeyCode::Q => entities::player::try_attack_guard(ctx, self),
+            KeyCode::Q | KeyCode::E => entities::player::try_attack_guard(ctx, self),
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,
@@ -1561,7 +1561,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         }
 
                         if self.game_state == GameState::SubmitTime {
-                            let total_time = self.level_times.iter().sum::<f32>();
+                            let total_time = self
+                                .level_times
+                                .iter()
+                                .skip(level::TUTORIAL_COUNT)
+                                .sum::<f32>();
                             submit_time(self.player_name.clone(), total_time);
 
                             self.player_name = String::new();

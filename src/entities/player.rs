@@ -188,7 +188,10 @@ impl Player {
 
         if self.stamina.stamina <= 0. {
             self.is_stealth = false;
-            self.move_type = MoveType::Normal;
+
+            if self.move_type == MoveType::Sprint {
+                self.move_type = MoveType::Normal;
+            }
         }
 
         if self.is_stealth {
@@ -210,6 +213,7 @@ impl Player {
             &mut self.transform,
             &self.move_component,
             self.aabb.colliding_axis,
+            dt,
         );
         self.set_angle(self.move_component.direction);
 

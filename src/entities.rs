@@ -12,6 +12,7 @@ pub fn move_entity(
     transform: &mut TransformComponent,
     move_component: &MoveComponent,
     colliding_components: (bool, bool),
+    dt: f32,
 ) {
     let mut move_dir = move_component.direction * move_component.speed;
     if colliding_components.0 {
@@ -21,7 +22,7 @@ pub fn move_entity(
         move_dir.y = 0.;
     }
 
-    transform.update(move_dir);
+    transform.update(move_dir, dt);
 }
 
 #[inline]

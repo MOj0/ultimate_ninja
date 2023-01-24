@@ -1,5 +1,5 @@
 {
   "mute": false,
   "particles": true,
-  "skip_tutorial": false
+  "skip_tutorial": true
 }

@@ -1,3 +1,4 @@
+use crate::constants;
 use crate::util;
 
 #[derive(Clone)]
@@ -25,8 +26,8 @@ impl TransformComponent {
     }
 
     #[inline]
-    pub fn update(&mut self, dir: glam::Vec2) {
-        self.position += dir;
+    pub fn update(&mut self, dir: glam::Vec2, dt: f32) {
+        self.position += dir * dt * constants::TARGET_FPS;
         self.grid_index = util::compute_grid_index(&self.position);
     }
 }
