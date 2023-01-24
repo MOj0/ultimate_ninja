@@ -37,6 +37,8 @@ pub struct Guard {
     pub max_move_interval: f32,
     pub move_interval: f32,
     pub wall_move_interval: f32,
+
+    pub is_tutorial: bool,
 }
 
 #[derive(PartialEq)]
@@ -54,6 +56,7 @@ impl Guard {
         position: glam::Vec2,
         assets: &Assets,
         color: ggez::graphics::Color,
+        is_tutorial: bool,
     ) -> Self {
         Self {
             guard_state: GuardState::Walk,
@@ -102,6 +105,8 @@ impl Guard {
             max_move_interval: 0.,
             move_interval: 0.,
             wall_move_interval: 0.,
+
+            is_tutorial,
         }
     }
 

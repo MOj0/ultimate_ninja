@@ -21,6 +21,7 @@ impl GuardHeavy {
         position: glam::Vec2,
         assets: &Assets,
         color: ggez::graphics::Color,
+        is_tutorial: bool,
     ) -> Self {
         let heavy_look_component = LookComponent::new_with_mesh(
             ctx,
@@ -31,7 +32,7 @@ impl GuardHeavy {
             constants::N_FOV_RAYS,
         );
 
-        let mut guard = Guard::new(ctx, quad_ctx, position, assets, color);
+        let mut guard = Guard::new(ctx, quad_ctx, position, assets, color, is_tutorial);
         guard.add_look_component(heavy_look_component);
 
         Self {
@@ -74,7 +75,7 @@ impl GuardHeavy {
                 }
             }
             GuardState::Walk => {
-                if qrand::gen_range(1., 2000.) <= 1. {
+                if qrand::gen_range(1., 2000.) <= 1. || self.guard.is_tutorial {
                     self.guard.set_lookout(0.3, 0.4, 1., 2.);
                 }
 

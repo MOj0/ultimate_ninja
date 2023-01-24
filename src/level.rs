@@ -13,6 +13,10 @@ use std::io::Read;
 use crate::Game;
 
 const ALL_LEVELS: &[&str] = &[
+    "levels/tutorial1.txt",
+    "levels/tutorial2.txt",
+    "levels/tutorial3.txt",
+    "levels/tutorial4.txt",
     "levels/level1.txt",
     "levels/level2.txt",
     "levels/level3.txt",
@@ -27,6 +31,7 @@ const ALL_LEVELS: &[&str] = &[
     "levels/level12.txt",
 ];
 
+pub const TUTORIAL_COUNT: usize = 4;
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 
 pub fn load_level(
@@ -90,6 +95,7 @@ pub fn load_level(
                 position_center,
                 &assets,
                 ggez::graphics::Color::YELLOW,
+                level_index < TUTORIAL_COUNT,
             )),
             's' => game_state.guards_scout.push(GuardScout::new(
                 ctx,
@@ -97,6 +103,7 @@ pub fn load_level(
                 position_center,
                 &assets,
                 ggez::graphics::Color::CYAN,
+                level_index < TUTORIAL_COUNT,
             )),
             'h' => game_state.guards_heavy.push(GuardHeavy::new(
                 ctx,
@@ -104,6 +111,7 @@ pub fn load_level(
                 position_center,
                 &assets,
                 ggez::graphics::Color::RED,
+                level_index < TUTORIAL_COUNT,
             )),
             'x' => game_state.walls.push(Wall::new(
                 position,
@@ -153,5 +161,124 @@ pub fn load_level(
         }
 
         x += 1;
+    }
+}
+
+pub fn system(game_state: &mut Game) {
+    match game_state.level_idx {
+        0 => {
+            game_state.overlay_system.set_active_at(1, true);
+            game_state.overlay_system.set_active_at(2, true);
+
+            let mut pos = game_state.player.transform.position;
+            let mut text = "This is you";
+            if game_state.target.is_dead() {
+                pos = game_state.exit.transform.position;
+                text = "Go through the exit to get to the next level"
+            } else if (game_state.player.transform.position - glam::vec2(580., 420.)).length() > 50.
+            {
+                pos = game_state.target.transform.position;
+                text = "This is your target\nEliminate the target to pass the level"
+            }
+
+            game_state.overlay_system.set_pos_at(
+                1,
+                pos + glam::vec2(-constants::ENTITY_SIZE * 4., constants::ENTITY_SIZE * 4.),
+            );
+            game_state.overlay_system.set_rot_at(1, -constants::PI / 4.);
+
+            game_state
+                .overlay_system
+                .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
+
+            game_state.overlay_system.set_text_at(2, text);
+        }
+        1 => {
+            let overlay_active =
+                !game_state.target.is_dead() || game_state.player.teleport.location.is_some();
+            game_state.overlay_system.set_active_at(1, overlay_active);
+            game_state.overlay_system.set_active_at(2, overlay_active);
+
+            let mut pos =
+                game_state.exit.transform.position + glam::vec2(0., constants::ENTITY_SIZE * 5.);
+            let mut text = "You also have some special abilities which drain your stamina\nOne of them is teleport\nTry double-pressing the F key somewhere here to place the marker";
+            if game_state.target.is_dead() {
+                pos = game_state.player.transform.position;
+                text = "To teleport back\ndouble-press the F key"
+            } else if game_state.player.teleport.location.is_some() {
+                pos = glam::vec2(
+                    constants::MAX_WORLD_X as f32 / 2.,
+                    constants::MAX_WORLD_Y as f32 / 2.,
+                );
+                text = "You can sprint by\nholding the Shift key";
+            }
+
+            game_state.overlay_system.set_pos_at(
+                1,
+                pos + glam::vec2(-constants::ENTITY_SIZE * 4., constants::ENTITY_SIZE * 4.),
+            );
+            game_state.overlay_system.set_rot_at(1, -constants::PI / 4.);
+
+            game_state
+                .overlay_system
+                .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
+
+            game_state.overlay_system.set_text_at(2, text);
+        }
+        2 => {
+            let overlay_active = !game_state.guards_basic[0].is_dead();
+            game_state.overlay_system.set_active_at(1, overlay_active);
+            game_state.overlay_system.set_active_at(2, overlay_active);
+
+            let mut pos =
+                game_state.player.transform.position + glam::vec2(0., constants::ENTITY_SIZE * 3.);
+            let mut text =
+                "Target will usually have some guards\nYou can avoid them\nor eliminate them aswell\nBe wary\nguards can hear your footsteps";
+            if (game_state.player.transform.position - glam::vec2(500., 460.)).length() > 50. {
+                pos = game_state.guards_basic[0].guard.transform.position
+                    + glam::vec2(0., constants::ENTITY_SIZE * 3.);
+                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl key\nEliminate with Q";
+            }
+
+            game_state.overlay_system.set_pos_at(
+                1,
+                pos + glam::vec2(-constants::ENTITY_SIZE * 4., constants::ENTITY_SIZE * 4.),
+            );
+            game_state.overlay_system.set_rot_at(1, -constants::PI / 4.);
+
+            game_state
+                .overlay_system
+                .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
+
+            game_state.overlay_system.set_text_at(2, text);
+        }
+        3 => {
+            if game_state.exit.player_exited {
+                game_state.overlay_system.set_active_at(1, false);
+                game_state.overlay_system.set_active_at(2, false);
+            } else if game_state.target.is_dead()
+                || (game_state.player.transform.position - glam::vec2(100., 380.)).length() < 30.
+            {
+                game_state.overlay_system.set_active_at(1, false);
+                game_state.overlay_system.set_active_at(2, true);
+            } else {
+                game_state.overlay_system.set_active_at(2, false);
+            }
+
+            let mut pos = game_state.player.transform.position;
+            let mut text =
+                "Your second ability is stealth\nActivate it by holding the F key\nYou cannot move while being stealth\nTry to eliminate the guards";
+
+            if game_state.target.is_dead() {
+                pos = glam::vec2(700., 80.);
+                text = "Remember, your score is determined\nby the amount of time needed\nfor completing each level";
+            }
+
+            game_state
+                .overlay_system
+                .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
+            game_state.overlay_system.set_text_at(2, text);
+        }
+        _ => (),
     }
 }

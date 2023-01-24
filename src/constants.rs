@@ -64,9 +64,10 @@ pub const BTN_BOTTOM_LEFT_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.125, HEI
 pub const BTN_BOTTOM_RIGHT_POS: glam::Vec2 =
     glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.833);
 
-pub const BTN_BOTTOM_LEFT_POS1: glam::Vec2 =
-    glam::vec2(WIDTH as f32 * 0.025, HEIGHT as f32 * 0.7166);
+pub const BTN_BOTTOM_LEFT_POS1: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.025, HEIGHT as f32 * 0.59);
 pub const BTN_BOTTOM_LEFT_POS2: glam::Vec2 =
+    glam::vec2(WIDTH as f32 * 0.025, HEIGHT as f32 * 0.7166);
+pub const BTN_BOTTOM_LEFT_POS3: glam::Vec2 =
     glam::vec2(WIDTH as f32 * 0.025, HEIGHT as f32 * 0.833);
 
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;

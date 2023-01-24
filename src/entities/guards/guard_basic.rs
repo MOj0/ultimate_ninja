@@ -18,9 +18,10 @@ impl GuardBasic {
         position: glam::Vec2,
         assets: &Assets,
         color: ggez::graphics::Color,
+        is_tutorial: bool,
     ) -> Self {
         Self {
-            guard: Guard::new(ctx, quad_ctx, position, assets, color),
+            guard: Guard::new(ctx, quad_ctx, position, assets, color, is_tutorial),
         }
     }
 
@@ -34,7 +35,7 @@ impl GuardBasic {
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
         player_sound: &TransformComponent,
     ) {
-        if self.guard.dead_component.is_dead {
+        if self.is_dead() {
             return;
         }
 
@@ -50,7 +51,7 @@ impl GuardBasic {
                 }
             }
             GuardState::Walk => {
-                if qrand::gen_range(1., 1000.) <= 5. {
+                if qrand::gen_range(1., 1000.) <= 5. || self.guard.is_tutorial {
                     self.guard.set_lookout(0.5, 0.9, 3., 5.);
                 }
 

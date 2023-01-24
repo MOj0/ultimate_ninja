@@ -46,6 +46,11 @@ impl OverlaySystem {
             .set_rotation(rotation);
     }
 
+    #[inline]
+    pub fn set_text_at(&mut self, idx: usize, text: &str) {
+        self.overlay_items.get_mut(idx).unwrap().set_text(text);
+    }
+
     pub fn update(&mut self, dt: f32) {
         self.overlay_items
             .iter_mut()
@@ -105,12 +110,21 @@ impl OverlayItem {
         }
     }
 
+    #[inline]
     pub fn set_position(&mut self, position: glam::Vec2) {
         self.position = position;
     }
 
+    #[inline]
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
+    }
+
+    #[inline]
+    pub fn set_text(&mut self, text: &str) {
+        if self.text.is_some() {
+            self.text = Some(text.to_owned());
+        }
     }
 
     pub fn update(&mut self, counter: f32) {

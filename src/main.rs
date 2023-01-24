@@ -36,7 +36,7 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Make tutorial levels
+// TODO: Make more levels with different guard types
 // TODO: Take 4k display resolution into account
 // TODO: Prevent leaderboard cheating
 
@@ -82,11 +82,13 @@ pub struct Game {
     level_times: [f32; level::LEVEL_COUNT],
     leaderboard: Option<Vec<PlayerEntry>>,
     player_name: String,
+    is_skip_tutorial: bool,
 }
 
 impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
-        let (is_muted, are_particles_activated) = read_config(constants::CONFIG_FILENAME);
+        let (is_muted, are_particles_activated, is_skip_tutorial) =
+            read_config(constants::CONFIG_FILENAME);
 
         let game_state = GameState::Menu;
 
@@ -218,26 +220,24 @@ impl Game {
         let overlay_arrow = overlay_system::OverlayItem::new(
             Some(arrow),
             None,
-            glam::vec2(150., 150.),
+            glam::vec2(0., 0.),
             0.,
             0.,
-            |x: f32| x.sin().abs(),
+            |x: f32| x.sin().abs() * 0.3 + 0.7,
         );
 
         let overlay_text = overlay_system::OverlayItem::new(
             None,
-            Some("This is a text".to_owned()),
-            glam::vec2(300., 300.),
+            Some("".to_owned()),
+            glam::vec2(0., 0.),
             0.,
             0.,
-            |x: f32| x.sin().abs(),
+            |_: f32| 1.,
         );
 
         overlay_system.add_item(overlay_marker);
         overlay_system.add_item(overlay_arrow);
         overlay_system.add_item(overlay_text);
-        overlay_system.set_active_at(1, true);
-        overlay_system.set_active_at(2, true);
 
         let level_idx = 0;
 
@@ -310,6 +310,7 @@ impl Game {
             level_times: [0.; level::LEVEL_COUNT],
             leaderboard: None,
             player_name: String::new(),
+            is_skip_tutorial,
         }
     }
 
@@ -578,6 +579,35 @@ impl Game {
             ),
         )?;
 
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.menu_square,
+            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS3),
+        )?;
+        if self.is_skip_tutorial {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.assets.checkmark,
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_LEFT_POS3 + glam::vec2(5., 5.))
+                    .scale(glam::Vec2::splat(constants::WIDTH as f32 / 800.)),
+            )?;
+        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Skip tutorial".into(), 36.),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BOTTOM_LEFT_POS3
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.075,
+                        constants::HEIGHT as f32 * 0.0166,
+                    ),
+            ),
+        )?;
+
         Ok(())
     }
 
@@ -757,8 +787,14 @@ When you complete your mission, a pathway to the next level will appear"
                 .dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(65., 20.)),
         )?;
 
-        let level_times_str = (0..level::LEVEL_COUNT)
-            .map(|lvl_idx| format!("Level {}: {}\n", lvl_idx + 1, self.level_times[lvl_idx]))
+        let level_times_str = (level::TUTORIAL_COUNT..level::LEVEL_COUNT)
+            .map(|lvl_idx| {
+                format!(
+                    "Level {}: {}\n",
+                    lvl_idx + 1 - level::TUTORIAL_COUNT,
+                    self.level_times[lvl_idx]
+                )
+            })
             .reduce(|acc, itm| acc + &itm)
             .unwrap();
 
@@ -769,7 +805,11 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::DrawParam::default().dest(glam::vec2(250., 20.)),
         )?;
 
-        let total_time = self.level_times.iter().sum::<f32>();
+        let total_time = self
+            .level_times
+            .iter()
+            .skip(level::TUTORIAL_COUNT)
+            .sum::<f32>();
         graphics::draw(
             ctx,
             quad_ctx,
@@ -1166,15 +1206,17 @@ When you complete your mission, a pathway to the next level will appear"
             );
         }
 
-        graphics::queue_text(
-            ctx,
-            &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
-            glam::vec2(
-                constants::WIDTH as f32 * 0.9,
-                constants::HEIGHT as f32 * 0.95,
-            ),
-            None,
-        );
+        if self.level_idx >= level::TUTORIAL_COUNT {
+            graphics::queue_text(
+                ctx,
+                &util::make_text(format!("{:.1}", self.curr_level_time), 24.),
+                glam::vec2(
+                    constants::WIDTH as f32 * 0.9,
+                    constants::HEIGHT as f32 * 0.95,
+                ),
+                None,
+            );
+        }
 
         if self.debug_draw {
             graphics::draw(
@@ -1226,7 +1268,12 @@ When you complete your mission, a pathway to the next level will appear"
     }
 
     fn write_config(&self, filename: &str) {
-        let json = serde_json::json!({ "mute": !self.sound_collection.is_on, "particles": self.particle_system.is_activated });
+        let json = serde_json::json!(
+        {
+            "mute": !self.sound_collection.is_on,
+            "particles": self.particle_system.is_activated,
+            "skip_tutorial": self.is_skip_tutorial
+        });
 
         std::fs::write(filename, serde_json::to_string_pretty(&json).unwrap()).unwrap();
     }
@@ -1268,6 +1315,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         look_component::system(self);
 
         entities::exit::system(self, dt);
+
+        level::system(self);
 
         particle_system::system(self, dt);
 
@@ -1459,6 +1508,14 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         self.particle_system
                             .set_activated(!self.particle_system.is_activated);
                         self.write_config(constants::CONFIG_FILENAME);
+                    } else if util::rect_contains_point(
+                        constants::BTN_DIM_SQUARE,
+                        constants::BTN_BOTTOM_LEFT_POS3,
+                        glam::vec2(x, y),
+                    ) {
+                        self.is_skip_tutorial = !self.is_skip_tutorial;
+
+                        self.write_config(constants::CONFIG_FILENAME);
                     }
                 }
 
@@ -1476,6 +1533,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         if new_game_state == GameState::Game {
                             let is_proceed = self.game_state != GameState::GameOver
                                 && self.game_state != GameState::Pause;
+
+                            self.level_idx = 0;
+                            if self.is_skip_tutorial {
+                                self.level_idx = level::TUTORIAL_COUNT;
+                            }
 
                             level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceed);
                             self.n_objects = 1
@@ -1633,18 +1695,31 @@ async fn submit_time(username: String, time: f32) {
     println!("{}", response.text().await.unwrap());
 }
 
-fn read_config(filename: &str) -> (bool, bool) {
+fn read_config(filename: &str) -> (bool, bool, bool) {
     let data = std::fs::read_to_string(filename).unwrap_or_default();
     let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
     match config {
         serde_json::Value::Object(m) => {
-            let is_muted = m["mute"].as_bool().unwrap_or_default();
-            let are_particles_activated = m["particles"].as_bool().unwrap_or(true);
+            let is_muted = m
+                .get("mute")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(false))
+                .unwrap_or(false);
+            let are_particles_activated = m
+                .get("particles")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(true))
+                .unwrap_or(true);
+            let is_skip_tutorial = m
+                .get("skip_tutorial")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(false))
+                .unwrap_or(false);
 
-            return (is_muted, are_particles_activated);
+            return (is_muted, are_particles_activated, is_skip_tutorial);
         }
         _ => (),
     }
 
-    (false, true)
+    (false, true, false)
 }
