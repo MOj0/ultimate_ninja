@@ -34,13 +34,16 @@ impl GuardBasic {
         dt: f32,
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
         player_sound: &TransformComponent,
+        guards_alerted: bool,
     ) {
         if self.is_dead() {
             return;
         }
 
         match self.guard.guard_state {
-            GuardState::HeardPlayer(dir_to_player) => self.guard.do_heard_player(dir_to_player),
+            GuardState::HeardPlayer(dir_to_player) => {
+                self.guard.do_heard_player(dir_to_player, guards_alerted)
+            }
             GuardState::Lookout(lookout_speed) => {
                 let lookout_dir =
                     util::vec_from_angle(self.guard.transform.angle + dt * lookout_speed);

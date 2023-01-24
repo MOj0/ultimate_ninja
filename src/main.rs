@@ -36,9 +36,9 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Make more levels with different guard types
 // TODO: Take 4k display resolution into account
 // TODO: Prevent leaderboard cheating
+// TODO: Put config in a better place
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -418,7 +418,7 @@ impl Game {
     }
 
     fn do_level_animation(&mut self, dt: f32) {
-        if self.curr_level_time <= 0. {
+        if self.curr_level_time <= 0. && self.player.is_moving() {
             self.camera
                 .set_lerp_delta(constants::CAMERA_DEFAULT_LERP_DELTA);
 
@@ -435,7 +435,7 @@ impl Game {
             self.camera.update(self.player.transform.position);
         }
 
-        self.curr_level_time -= dt;
+        self.curr_level_time = (self.curr_level_time - dt).max(0.);
     }
 
     fn draw_menu(
@@ -1322,7 +1322,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
         overlay_system::system(self, dt);
 
-        camera_component::system(self, dt);
+        camera_component::system(self);
 
         self.curr_level_time += dt;
 
@@ -1534,9 +1534,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                             let is_proceed = self.game_state != GameState::GameOver
                                 && self.game_state != GameState::Pause;
 
-                            self.level_idx = 0;
-                            if self.is_skip_tutorial {
-                                self.level_idx = level::TUTORIAL_COUNT;
+                            if self.game_state == GameState::Menu {
+                                self.level_idx = 0;
+                                if self.is_skip_tutorial {
+                                    self.level_idx = level::TUTORIAL_COUNT;
+                                }
                             }
 
                             level::load_level(ctx, quad_ctx, self, self.level_idx, is_proceed);

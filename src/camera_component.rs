@@ -58,7 +58,7 @@ impl CameraComponent {
     }
 }
 
-pub fn system(game_state: &mut Game, dt: f32) {
+pub fn system(game_state: &mut Game) {
     game_state
         .camera
         .update(game_state.player.transform.position);

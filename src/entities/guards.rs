@@ -125,8 +125,13 @@ impl Guard {
     }
 
     #[inline]
-    fn next_look_component(&mut self) {
-        self.look_idx = (self.look_idx + 1) % self.look_components.len();
+    fn set_large_look_component(&mut self) {
+        self.look_idx = self.look_components.len() - 1;
+    }
+
+    #[inline]
+    fn set_small_look_component(&mut self) {
+        self.look_idx = 0;
     }
 
     #[inline]
@@ -228,7 +233,7 @@ impl Guard {
         }
     }
 
-    fn do_heard_player(&mut self, dir_to_player: glam::Vec2) {
+    fn do_heard_player(&mut self, dir_to_player: glam::Vec2, guards_alerted: bool) {
         self.set_speed(0.);
 
         let lerp_to_player = util::vec_lerp(
@@ -243,7 +248,11 @@ impl Guard {
         self.set_angle(self.move_component.direction);
 
         if self.move_interval <= 0. {
-            self.set_lookout(0.01, 0.7, 3., 4.);
+            if guards_alerted {
+                self.guard_state = GuardState::Alert;
+            } else {
+                self.set_lookout(0.01, 0.7, 3., 4.);
+            }
         }
     }
 
@@ -365,20 +374,32 @@ pub fn system(ctx: &mut ggez::Context, game_state: &mut Game, dt: f32) {
     );
     let player_sound = TransformComponent::new(p_position, p_sound_radius, -1);
 
-    game_state
-        .guards_basic
-        .iter_mut()
-        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+    game_state.guards_basic.iter_mut().for_each(|guard| {
+        guard.update(
+            dt,
+            &aabb_objects,
+            &player_sound,
+            game_state.are_guards_alerted,
+        )
+    });
 
-    game_state
-        .guards_scout
-        .iter_mut()
-        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+    game_state.guards_scout.iter_mut().for_each(|guard| {
+        guard.update(
+            dt,
+            &aabb_objects,
+            &player_sound,
+            game_state.are_guards_alerted,
+        )
+    });
 
-    game_state
-        .guards_heavy
-        .iter_mut()
-        .for_each(|guard| guard.update(dt, &aabb_objects, &player_sound));
+    game_state.guards_heavy.iter_mut().for_each(|guard| {
+        guard.update(
+            dt,
+            &aabb_objects,
+            &player_sound,
+            game_state.are_guards_alerted,
+        )
+    });
 }
 
 pub fn is_transform_detected(

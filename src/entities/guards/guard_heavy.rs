@@ -10,8 +10,6 @@ use quad_rand as qrand;
 
 pub struct GuardHeavy {
     pub guard: Guard,
-
-    pub is_using_next_look: bool,
 }
 
 impl GuardHeavy {
@@ -35,11 +33,7 @@ impl GuardHeavy {
         let mut guard = Guard::new(ctx, quad_ctx, position, assets, color, is_tutorial);
         guard.add_look_component(heavy_look_component);
 
-        Self {
-            guard,
-
-            is_using_next_look: false,
-        }
+        Self { guard }
     }
 
     #[inline]
@@ -56,13 +50,16 @@ impl GuardHeavy {
         dt: f32,
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
         player_sound: &TransformComponent,
+        guards_alerted: bool,
     ) {
         if self.guard.dead_component.is_dead {
             return;
         }
 
         match self.guard.guard_state {
-            GuardState::HeardPlayer(dir_to_player) => self.guard.do_heard_player(dir_to_player),
+            GuardState::HeardPlayer(dir_to_player) => {
+                self.guard.do_heard_player(dir_to_player, guards_alerted)
+            }
             GuardState::Lookout(lookout_speed) => {
                 let lookout_dir =
                     util::vec_from_angle(self.guard.transform.angle + dt * lookout_speed);
@@ -71,23 +68,20 @@ impl GuardHeavy {
 
                 if self.guard.move_interval <= 0. {
                     self.guard.guard_state = GuardState::Walk;
-                    self.guard.next_look_component();
+                    self.guard.set_small_look_component();
                 }
             }
             GuardState::Walk => {
-                if qrand::gen_range(1., 2000.) <= 1. || self.guard.is_tutorial {
+                if qrand::gen_range(1., 1000.) <= 2.5 || self.guard.is_tutorial {
                     self.guard.set_lookout(0.3, 0.4, 1., 2.);
+                    self.guard.set_large_look_component();
                 }
 
                 self.guard.do_move(rect_objects, 2., 4.);
                 self.set_speed(constants::GUARD_SPEED_MEDIUM);
             }
             GuardState::Alert => {
-                if !self.is_using_next_look {
-                    self.guard.next_look_component();
-                    self.is_using_next_look = true;
-                }
-
+                self.guard.set_large_look_component();
                 self.guard.do_move(rect_objects, 2., 4.);
                 self.set_speed(constants::GUARD_SPEED_FAST);
             }

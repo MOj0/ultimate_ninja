@@ -10,9 +10,7 @@ use quad_rand as qrand;
 
 pub struct GuardScout {
     pub guard: Guard,
-
     pub scout_factor: f32,
-    pub is_using_next_look: bool,
 }
 
 impl GuardScout {
@@ -38,9 +36,7 @@ impl GuardScout {
 
         Self {
             guard,
-
             scout_factor: 1.,
-            is_using_next_look: false,
         }
     }
 
@@ -58,13 +54,16 @@ impl GuardScout {
         dt: f32,
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
         player_sound: &TransformComponent,
+        guards_alerted: bool,
     ) {
-        if self.guard.dead_component.is_dead {
+        if self.is_dead() {
             return;
         }
 
         match self.guard.guard_state {
-            GuardState::HeardPlayer(dir_to_player) => self.guard.do_heard_player(dir_to_player),
+            GuardState::HeardPlayer(dir_to_player) => {
+                self.guard.do_heard_player(dir_to_player, guards_alerted)
+            }
             GuardState::Lookout(lookout_speed) => {
                 let lookout_dir = util::vec_from_angle(
                     self.guard.transform.angle + dt * lookout_speed * self.scout_factor,
@@ -73,8 +72,7 @@ impl GuardScout {
 
                 if self.guard.move_interval <= 0. {
                     self.guard.guard_state = GuardState::Walk;
-                    self.guard.next_look_component();
-                    self.is_using_next_look = !self.is_using_next_look;
+                    self.guard.set_small_look_component();
                 } else if self.guard.move_interval <= self.guard.max_move_interval / 2. {
                     self.scout_factor = -1.;
                 }
@@ -84,19 +82,14 @@ impl GuardScout {
                     self.guard.set_lookout(1.2, 1.6, 12., 16.);
 
                     self.scout_factor = 1.;
-                    self.guard.next_look_component();
-                    self.is_using_next_look = !self.is_using_next_look;
+                    self.guard.set_large_look_component();
                 }
 
                 self.guard.do_move(rect_objects, 5., 7.);
                 self.set_speed(constants::GUARD_SPEED_SLOW);
             }
             GuardState::Alert => {
-                if !self.is_using_next_look {
-                    self.guard.next_look_component();
-                    self.is_using_next_look = true;
-                }
-
+                self.guard.set_large_look_component();
                 self.guard.do_move(rect_objects, 5., 7.);
                 self.set_speed(constants::GUARD_SPEED);
             }
