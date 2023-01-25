@@ -7,6 +7,7 @@ use crate::entities::player::Player;
 use crate::entities::target::Target;
 use crate::entities::wall::Wall;
 use crate::tile_component::TileComponent;
+use crate::util;
 use crate::SpriteComponent;
 use std::io::Read;
 
@@ -163,8 +164,9 @@ pub fn load_level(
 pub fn system(game_state: &mut Game) {
     match game_state.level_idx {
         0 => {
-            game_state.overlay_system.set_active_at(1, true);
-            game_state.overlay_system.set_active_at(2, true);
+            let overlay_active = !game_state.exit.player_exited;
+            game_state.overlay_system.set_active_at(1, overlay_active);
+            game_state.overlay_system.set_active_at(2, overlay_active);
 
             let mut pos = game_state.player.transform.position;
             let mut text = "This is you";
@@ -254,7 +256,7 @@ pub fn system(game_state: &mut Game) {
                 game_state.overlay_system.set_active_at(2, false);
 
                 game_state.is_skip_tutorial = true;
-                game_state.write_config(constants::CONFIG_FILENAME);
+                game_state.write_config(&util::config_filename());
             } else if game_state.target.is_dead()
                 || (game_state.player.transform.position - glam::vec2(100., 380.)).length() < 30.
             {
@@ -266,7 +268,7 @@ pub fn system(game_state: &mut Game) {
 
             let mut pos = game_state.player.transform.position;
             let mut text =
-                "Your second ability is stealth\nActivate it by holding the F key\nYou cannot move while being stealth\nTry to eliminate the guards";
+                "Your second ability is stealth\nActivate it by holding the F key\nYou cannot move while being stealth\nTry to eliminate the guard";
 
             if game_state.target.is_dead() {
                 pos = glam::vec2(700., 80.);

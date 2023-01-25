@@ -38,7 +38,6 @@ use std::fmt;
 
 // TODO: Take 4k display resolution into account
 // TODO: Prevent leaderboard cheating
-// TODO: Put config in a better place
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -88,7 +87,7 @@ pub struct Game {
 impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
         let (is_muted, are_particles_activated, is_skip_tutorial) =
-            read_config(constants::CONFIG_FILENAME);
+            util::read_config(&util::config_filename());
 
         let game_state = GameState::Menu;
 
@@ -418,7 +417,9 @@ impl Game {
     }
 
     fn do_level_animation(&mut self, dt: f32) {
-        if self.curr_level_time <= 0. && self.player.is_moving() {
+        if self.curr_level_time <= 0.
+            && (self.player.is_moving() || self.level_idx < level::TUTORIAL_COUNT)
+        {
             self.camera
                 .set_lerp_delta(constants::CAMERA_DEFAULT_LERP_DELTA);
 
@@ -429,7 +430,7 @@ impl Game {
         }
 
         self.camera.set_lerp_delta(0.05);
-        if self.curr_level_time >= constants::LEVEL_ANIMATION_TIME / 2. {
+        if self.curr_level_time >= constants::LEVEL_ANIMATION_TIME / 3. {
             self.camera.update(self.target.transform.position);
         } else {
             self.camera.update(self.player.transform.position);
@@ -1493,13 +1494,16 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
                 if self.game_state == GameState::Menu {
+                    let mut setting_changed = false;
+
                     if util::rect_contains_point(
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS1,
                         glam::vec2(x, y),
                     ) {
                         self.sound_collection.is_on = !self.sound_collection.is_on;
-                        self.write_config(constants::CONFIG_FILENAME);
+
+                        setting_changed = true;
                     } else if util::rect_contains_point(
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS2,
@@ -1507,7 +1511,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     ) {
                         self.particle_system
                             .set_activated(!self.particle_system.is_activated);
-                        self.write_config(constants::CONFIG_FILENAME);
+
+                        setting_changed = true;
                     } else if util::rect_contains_point(
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS3,
@@ -1515,7 +1520,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     ) {
                         self.is_skip_tutorial = !self.is_skip_tutorial;
 
-                        self.write_config(constants::CONFIG_FILENAME);
+                        setting_changed = true;
+                    }
+
+                    if setting_changed {
+                        self.write_config(&util::config_filename());
                     }
                 }
 
@@ -1699,33 +1708,4 @@ async fn submit_time(username: String, time: f32) {
         .unwrap();
 
     println!("{}", response.text().await.unwrap());
-}
-
-fn read_config(filename: &str) -> (bool, bool, bool) {
-    let data = std::fs::read_to_string(filename).unwrap_or_default();
-    let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
-    match config {
-        serde_json::Value::Object(m) => {
-            let is_muted = m
-                .get("mute")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(false))
-                .unwrap_or(false);
-            let are_particles_activated = m
-                .get("particles")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(true))
-                .unwrap_or(true);
-            let is_skip_tutorial = m
-                .get("skip_tutorial")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(false))
-                .unwrap_or(false);
-
-            return (is_muted, are_particles_activated, is_skip_tutorial);
-        }
-        _ => (),
-    }
-
-    (false, true, false)
 }

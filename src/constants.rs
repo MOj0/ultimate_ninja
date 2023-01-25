@@ -1,6 +1,6 @@
 pub const TARGET_FPS: f32 = 60.;
 
-pub const CONFIG_FILENAME: &str = "config.json";
+pub const CONFIG_FILENAME: &str = "ultimate_ninja_settings.json";
 
 // pub const WIDTH: u32 = 1920;
 // pub const HEIGHT: u32 = 1080;

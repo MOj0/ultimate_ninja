@@ -321,3 +321,48 @@ pub fn compute_grid_index(position: &glam::Vec2) -> isize {
 
     (x + y * constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize
 }
+
+pub fn config_filename() -> String {
+    if cfg!(windows) {
+        let win_home = std::env::var("userprofile").unwrap_or_default();
+        if win_home.len() > 0 {
+            return format!("{}\\{}", win_home, constants::CONFIG_FILENAME);
+        }
+    } else if cfg!(unix) {
+        let unix_user = std::env::var("USER").unwrap_or_default();
+        if unix_user.len() > 0 {
+            return format!("/home/{}/{}", unix_user, constants::CONFIG_FILENAME);
+        }
+    }
+
+    constants::CONFIG_FILENAME.to_owned()
+}
+
+pub fn read_config(filename: &str) -> (bool, bool, bool) {
+    let data = std::fs::read_to_string(filename).unwrap_or_default();
+    let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
+    match config {
+        serde_json::Value::Object(m) => {
+            let is_muted = m
+                .get("mute")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(false))
+                .unwrap_or(false);
+            let are_particles_activated = m
+                .get("particles")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(true))
+                .unwrap_or(true);
+            let is_skip_tutorial = m
+                .get("skip_tutorial")
+                .and_then(|val| Some(val.as_bool()))
+                .unwrap_or(Some(false))
+                .unwrap_or(false);
+
+            return (is_muted, are_particles_activated, is_skip_tutorial);
+        }
+        _ => (),
+    }
+
+    (false, true, false)
+}
