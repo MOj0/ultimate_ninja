@@ -36,8 +36,10 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Take 4k display resolution into account
-// TODO: Prevent leaderboard cheating
+// TODO: Scaling for different resolutions (handle camera - ortographic...)
+// TODO: Spawn a thread when making http requests
+// TODO: When getting entries from MongoDB, sort them first on MongoDB!
+// TODO: Prevent leaderboard cheating - figure out a minimum number for completing each level, SUM of this is minimum that any player can achieve
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -652,10 +654,10 @@ impl Game {
             &self.menu_rectangle,
             graphics::DrawParam::default()
                 .dest(glam::vec2(
-                    constants::WIDTH as f32 * 0.0375,
-                    constants::HEIGHT as f32 * 0.4166,
+                    constants::WIDTH as f32 * 0.035,
+                    constants::HEIGHT as f32 * 0.4,
                 ))
-                .scale(glam::vec2(3., 4.1)),
+                .scale(glam::vec2(3.2, 4.35)),
         )?;
         graphics::draw(
             ctx,
@@ -663,18 +665,19 @@ impl Game {
             &util::make_text(
                 "Eliminate the green target\n
 Do not get spotted by guards\n
-Move around by using the touch joystick in the bottom right\n
-Tap and hold for stealth\n
-Double click to create a teleport marker at your position\n
-Double click again to teleport there\n
+Move with WASD or arrow keys\n
+Sprint with Shift, sneak with Ctrl\n
+Hold F key for stealth\n
+Double-press F to place a teleport marker at your position\n
+Double-click F again to teleport there\n
 Be wary of your stamina\n
 When you complete your mission, a pathway to the next level will appear"
                     .into(),
                 18.,
             ),
             graphics::DrawParam::default().dest(glam::vec2(
-                constants::WIDTH as f32 * 0.1,
-                constants::HEIGHT as f32 * 0.45,
+                constants::WIDTH as f32 * 0.08,
+                constants::HEIGHT as f32 * 0.42,
             )),
         )?;
 

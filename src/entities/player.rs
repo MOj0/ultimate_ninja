@@ -8,6 +8,7 @@ use crate::transform_component::TransformComponent;
 use crate::util;
 use crate::Assets;
 use crate::Game;
+use crate::GameState;
 use crate::SoundCollection;
 use crate::SpriteComponent;
 
@@ -350,6 +351,10 @@ fn handle_stealth_sound(
 }
 
 pub fn try_attack_guard(ctx: &mut ggez::Context, game_state: &mut Game) {
+    if game_state.game_state == GameState::GameOver {
+        return;
+    }
+
     if let Some(guard_to_attack_idx) = game_state.player.guard_to_attack_idx {
         let guard = &mut game_state.get_all_guards_mut()[guard_to_attack_idx];
         guard.set_dead(true);

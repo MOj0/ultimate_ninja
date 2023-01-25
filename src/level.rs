@@ -18,6 +18,7 @@ const ALL_LEVELS: &[&str] = &[
     "levels/tutorial2.txt",
     "levels/tutorial3.txt",
     "levels/tutorial4.txt",
+    "levels/tutorial5.txt",
     "levels/level1.txt",
     "levels/level2.txt",
     "levels/level3.txt",
@@ -32,7 +33,7 @@ const ALL_LEVELS: &[&str] = &[
     "levels/level12.txt",
 ];
 
-pub const TUTORIAL_COUNT: usize = 4;
+pub const TUTORIAL_COUNT: usize = 5;
 pub const LEVEL_COUNT: usize = ALL_LEVELS.len();
 
 pub fn load_level(
@@ -251,6 +252,34 @@ pub fn system(game_state: &mut Game) {
             game_state.overlay_system.set_text_at(2, text);
         }
         3 => {
+            let overlay_active = !game_state.exit.player_exited;
+            game_state.overlay_system.set_active_at(1, overlay_active);
+            game_state.overlay_system.set_active_at(2, overlay_active);
+
+            game_state.guards_basic[1].guard.dead_component.is_dead = true;
+
+            let mut pos = game_state.guards_basic[1].guard.transform.position
+                + glam::vec2(0., constants::ENTITY_SIZE * 3.);
+            let mut text = "If a guard spots a dead body\nALL guards will be immediately alerted";
+            if game_state.are_guards_alerted {
+                pos = game_state.target.transform.position
+                    + glam::vec2(0., constants::ENTITY_SIZE * 3.);
+                text = "Try to bypass the guards\neliminate the target and escape";
+            }
+
+            game_state.overlay_system.set_pos_at(
+                1,
+                pos + glam::vec2(-constants::ENTITY_SIZE * 4., constants::ENTITY_SIZE * 4.),
+            );
+            game_state.overlay_system.set_rot_at(1, -constants::PI / 4.);
+
+            game_state
+                .overlay_system
+                .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
+
+            game_state.overlay_system.set_text_at(2, text);
+        }
+        4 => {
             if game_state.exit.player_exited {
                 game_state.overlay_system.set_active_at(1, false);
                 game_state.overlay_system.set_active_at(2, false);
@@ -271,8 +300,8 @@ pub fn system(game_state: &mut Game) {
                 "Your second ability is stealth\nActivate it by holding the F key\nYou cannot move while being stealth\nTry to eliminate the guard";
 
             if game_state.target.is_dead() {
-                pos = glam::vec2(700., 80.);
-                text = "Remember, your score is determined\nby the amount of time needed\nfor completing each level";
+                pos = glam::vec2(645., 80.);
+                text = "Remember, your score is determined\nby the amount of time needed\nfor completing each level\nso try to complete it as fast as possible";
             }
 
             game_state
