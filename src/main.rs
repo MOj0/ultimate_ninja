@@ -36,10 +36,9 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Scaling for different resolutions (handle camera - ortographic...)
 // TODO: Spawn a thread when making http requests
-// TODO: When getting entries from MongoDB, sort them first on MongoDB!
-// TODO: Prevent leaderboard cheating - figure out a minimum number for completing each level, SUM of this is minimum that any player can achieve
+// TODO: Improve guard movement
+// TODO: Scaling for different resolutions (handle camera - ortographic...)
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -731,7 +730,7 @@ When you complete your mission, a pathway to the next level will appear"
         )?;
 
         if self.curr_level_time >= constants::LEADERBOARD_WAIT_TIME && self.leaderboard.is_none() {
-            self.leaderboard = Some(get_leaderboard());
+            // self.leaderboard = Some(get_leaderboard());
         }
 
         let leaderboard_str = if let Some(leaderboard) = &self.leaderboard {
@@ -1646,9 +1645,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         if let Some(dir) = direction {
             self.player.set_dir(dir);
         }
-        self.is_touch_joystick_activated = direction.is_some();
 
-        self.player.set_stealth_intent(false);
+        self.is_touch_joystick_activated = direction.is_some();
+        if direction.is_some() {
+            self.player.set_stealth_intent(false);
+        }
     }
 }
 
@@ -1682,18 +1683,14 @@ async fn get_leaderboard() -> Vec<PlayerEntry> {
     let client = reqwest::Client::new();
 
     let response = client
-        .get("https://data.mongodb-api.com/app/data-mjiob/endpoint/get")
+        .get("https://data.mongodb-api.com/app/data-mjiob/endpoint/leaderboard")
         .header("api-key", api_key)
         .send()
         .await
         .unwrap();
     let response_str = response.text().await.unwrap();
 
-    let mut leaderboard: Vec<PlayerEntry> = serde_json::from_str(&response_str).unwrap();
-    leaderboard.sort_by(|a, b| ((a.time * 10.) as i32).cmp(&((b.time * 10.) as i32)));
-    leaderboard.truncate(9); // Only display 9 entries
-
-    leaderboard
+    return serde_json::from_str(&response_str).unwrap();
 }
 
 #[tokio::main]
