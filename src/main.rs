@@ -10,6 +10,7 @@ mod level;
 mod look_component;
 mod mouse_input_handler;
 mod move_component;
+mod network_system;
 mod overlay_system;
 mod particle_system;
 mod sound_collection;
@@ -22,6 +23,7 @@ mod util;
 
 use crate::assets::Assets;
 use crate::mouse_input_handler::MouseInputHandler;
+use crate::network_system::NetworkSystem;
 use crate::sound_collection::SoundCollection;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
@@ -36,7 +38,7 @@ use ggez::{audio, graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-// TODO: Spawn a thread when making http requests
+// TODO: There are still some issues when submiting the time and requesting leaderboard right after...
 // TODO: Improve guard movement
 // TODO: Scaling for different resolutions (handle camera - ortographic...)
 
@@ -80,7 +82,9 @@ pub struct Game {
     n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
-    leaderboard: Option<Vec<PlayerEntry>>,
+    leaderboard_str: Option<String>,
+    network_system: NetworkSystem,
+    tokio_runtime: tokio::runtime::Runtime,
     player_name: String,
     is_skip_tutorial: bool,
 }
@@ -89,6 +93,8 @@ impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
         let (is_muted, are_particles_activated, is_skip_tutorial) =
             util::read_config(&util::config_filename());
+
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
 
         let game_state = GameState::Menu;
 
@@ -281,6 +287,8 @@ impl Game {
         )
         .unwrap();
 
+        let network_system = NetworkSystem::new();
+
         Game {
             game_state,
             assets,
@@ -308,7 +316,9 @@ impl Game {
             n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
-            leaderboard: None,
+            leaderboard_str: None,
+            network_system,
+            tokio_runtime,
             player_name: String::new(),
             is_skip_tutorial,
         }
@@ -340,8 +350,6 @@ impl Game {
         if is_proceed {
             self.curr_level_time = 0.;
         }
-
-        self.leaderboard = None;
     }
 
     // Collect all common guard objects into one vector
@@ -729,18 +737,17 @@ When you complete your mission, a pathway to the next level will appear"
                 .scale(glam::vec2(3., 4.55)),
         )?;
 
-        if self.curr_level_time >= constants::LEADERBOARD_WAIT_TIME && self.leaderboard.is_none() {
-            // self.leaderboard = Some(get_leaderboard());
+        if self.leaderboard_str.is_none() && self.network_system.is_ready() {
+            let mut network = NetworkSystem::new();
+            std::mem::swap(&mut network, &mut self.network_system);
+
+            self.leaderboard_str = Some(network.get_response());
         }
 
-        let leaderboard_str = if let Some(leaderboard) = &self.leaderboard {
-            leaderboard
-                .iter()
-                .map(|entry| entry.to_string() + "\n\n")
-                .collect()
-        } else {
-            "Requesting leaderboard...".to_owned()
-        };
+        let leaderboard_str = self
+            .leaderboard_str
+            .clone()
+            .unwrap_or("Requesting leaderboard...".to_owned());
 
         graphics::draw(
             ctx,
@@ -1288,6 +1295,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
+        // NOTE: Since this spawns a thread, it is okay to block here
+        self.tokio_runtime.block_on(self.network_system.tick());
+
         if self.game_state == GameState::Menu
             || self.game_state == GameState::Info
             || self.game_state == GameState::Leaderboard
@@ -1573,13 +1583,24 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                             }
                         }
 
+                        if self.game_state == GameState::Leaderboard
+                            && !self.network_system.request_in_progress()
+                        {
+                            self.network_system.do_request_leaderboard();
+                        }
+
                         if self.game_state == GameState::SubmitTime {
+                            self.leaderboard_str = None;
+
                             let total_time = self
                                 .level_times
                                 .iter()
                                 .skip(level::TUTORIAL_COUNT)
                                 .sum::<f32>();
-                            submit_time(self.player_name.clone(), total_time);
+                            self.network_system.do_submit_time_and_reqeust_leaderboard(
+                                self.player_name.clone(),
+                                total_time,
+                            );
 
                             self.player_name = String::new();
                             self.game_state = GameState::Leaderboard;
@@ -1675,37 +1696,4 @@ impl fmt::Display for PlayerEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.username, self.time)
     }
-}
-
-#[tokio::main]
-async fn get_leaderboard() -> Vec<PlayerEntry> {
-    let api_key = "bzkOp6qOAmopVFZhty69SSyB7OqTRDu1IqTs7TlLuBDeja7cDPGSaB0gL6c1IpBK";
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get("https://data.mongodb-api.com/app/data-mjiob/endpoint/leaderboard")
-        .header("api-key", api_key)
-        .send()
-        .await
-        .unwrap();
-    let response_str = response.text().await.unwrap();
-
-    return serde_json::from_str(&response_str).unwrap();
-}
-
-#[tokio::main]
-async fn submit_time(username: String, time: f32) {
-    let api_key = "bzkOp6qOAmopVFZhty69SSyB7OqTRDu1IqTs7TlLuBDeja7cDPGSaB0gL6c1IpBK";
-    let client = reqwest::Client::new();
-    let new_entry = PlayerEntry { username, time };
-
-    let response = client
-        .put("https://data.mongodb-api.com/app/data-mjiob/endpoint/put")
-        .header("api-key", api_key)
-        .json(&new_entry)
-        .send()
-        .await
-        .unwrap();
-
-    println!("{}", response.text().await.unwrap());
 }

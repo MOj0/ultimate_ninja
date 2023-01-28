@@ -75,5 +75,3 @@ pub const BTN_BOTTOM_LEFT_POS3: glam::Vec2 =
 pub const CAMERA_DEFAULT_LERP_DELTA: f32 = 0.33;
 
 pub const LEVEL_ANIMATION_TIME: f32 = 4.;
-
-pub const LEADERBOARD_WAIT_TIME: f32 = 0.6;
