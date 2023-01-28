@@ -106,12 +106,20 @@ impl NetworkSystem {
         })
     }
 
-    pub fn is_ready(&self) -> bool {
+    pub fn leaderboard_ready(&self) -> bool {
         if let Some(j_handle) = &self.leaderboard_join_handle {
             return j_handle.is_finished();
         }
 
         false
+    }
+
+    pub fn submit_finished(&self) -> bool {
+        if let Some(j_handle) = &self.submit_join_handle {
+            return j_handle.is_finished();
+        }
+
+        true
     }
 
     #[tokio::main]

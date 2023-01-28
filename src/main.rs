@@ -35,10 +35,6 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics, Context, GameResult};
 
-use serde::{Deserialize, Serialize};
-use std::fmt;
-
-// TODO: There are still some issues when submiting the time and requesting leaderboard right after...
 // TODO: Improve guard movement
 // TODO: Scaling for different resolutions (handle camera - ortographic...)
 
@@ -737,7 +733,10 @@ When you complete your mission, a pathway to the next level will appear"
                 .scale(glam::vec2(3., 4.55)),
         )?;
 
-        if self.leaderboard_str.is_none() && self.network_system.is_ready() {
+        if self.leaderboard_str.is_none()
+            && self.network_system.submit_finished()
+            && self.network_system.leaderboard_ready()
+        {
             let mut network = NetworkSystem::new();
             std::mem::swap(&mut network, &mut self.network_system);
 
@@ -1303,6 +1302,8 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             || self.game_state == GameState::Leaderboard
             || self.game_state == GameState::GameOver
             || self.game_state == GameState::Pause
+            || self.game_state == GameState::EndScreen
+            || self.game_state == GameState::SubmitTime
         {
             return Ok(());
         }
@@ -1684,16 +1685,4 @@ fn main() -> GameResult {
     ggez::start(conf, |mut context, mut quad_ctx| {
         Box::new(Game::new(&mut context, &mut quad_ctx))
     })
-}
-
-#[derive(Serialize, Deserialize)]
-struct PlayerEntry {
-    username: String,
-    time: f32,
-}
-
-impl fmt::Display for PlayerEntry {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}", self.username, self.time)
-    }
 }
