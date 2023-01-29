@@ -1,12 +1,12 @@
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 x--------xx11111111111-------x
 x-p------xx1111111g111b---t--x
-x--------xxxxxx--xxxxx-------x
+x--------xxxxxx--xxxxxB------x
 x---------------------b------x
-x-----------------BBBb-------x
+x-----------------BBBbb------x
 x----------g------BBBb-------x
 xxxxxx------------BBBb-------x
-xxxxxx-----xxxxxxx--b--------x
+xxxxxx-----xxxxxxxb-b--------x
 x----------xxxxxx------------x
 x---------------s-----b222222x
 x-----b-g-------------b222222x

@@ -1,13 +1,13 @@
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xbbbb111t111BB-------------BBx
 xbbb-111h111----------------bx
-x----111111bb------bBBbBb---bx
+x----111111bbb-----bBBbBb---bx
 x---bB------sxxxxxxxxxxxx-gxxx
 x--xxb---------bBBb----xx----x
 x-Bxx-----------g------xx----x
 x-bB------bbb----------------x
-xB--------bbb----------------x
-x-----g------xxxxxxxxxxxxxxx-x
+xBb-------bbb----------------x
+xB----g-----Bxxxxxxxxxxxxxxx-x
 x------xxxx----------------s-x
 x------xxxx---------bB---x222x
 x-Bxb------------xxxxx-g-x222x

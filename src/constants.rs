@@ -54,7 +54,7 @@ pub const HOLD_THRESHOLD_TIME: f32 = 0.4; // sec
 pub const TELEPORT_COST_INTIAL: f32 = 25.;
 pub const TELEPORT_COST: f32 = 50.;
 
-pub const N_FOV_RAYS: u32 = 10;
+pub const N_FOV_RAYS: u32 = 9;
 
 pub const BTN_DIM_RECT: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.3, HEIGHT as f32 * 0.125);
 pub const BTN_DIM_SQUARE: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.0625, HEIGHT as f32 * 0.083);

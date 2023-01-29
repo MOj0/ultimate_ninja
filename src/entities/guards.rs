@@ -191,18 +191,24 @@ impl Guard {
         move_interval_low: f32,
         move_interval_high: f32,
     ) {
-        let min_ray_scale = self.look_components[self.look_idx]
-            .ray_scales
-            .iter()
-            .min_by(|&&a, &&b| ((a * 100.) as i32).cmp(&((b * 100.) as i32)))
+        let base_look_component = &mut self.look_components[0];
+        base_look_component.update(&self.transform, rect_objects);
+
+        let narrow_look_points = &base_look_component.ray_scales[(constants::N_FOV_RAYS as f32 / 2.
+            - 1.) as usize
+            ..=(constants::N_FOV_RAYS as f32 / 2. + 1.) as usize];
+
+        let wall_ray_scale = *narrow_look_points
+            .into_iter()
+            .min_by_key(|a| (*a * 100.) as i32)
             .unwrap_or(&1.);
 
-        let is_close_to_wall = *min_ray_scale < 0.8;
+        let is_close_to_wall = wall_ray_scale < 1.;
 
         if self.move_interval <= 0. || is_close_to_wall && self.wall_move_interval <= 0. {
             let new_dir = self
                 .compute_move_component
-                .get_move_direction(&self.transform, rect_objects)
+                .get_move_direction(&self.transform, wall_ray_scale, rect_objects)
                 .normalize_or_zero();
 
             self.move_dir = new_dir;
@@ -216,6 +222,9 @@ impl Guard {
                 } else {
                     0.25
                 };
+
+                self.max_move_interval = self.wall_move_interval;
+                self.move_interval = self.max_move_interval;
             }
         } else {
             let lerped_dir = if self.max_move_interval != 0. {

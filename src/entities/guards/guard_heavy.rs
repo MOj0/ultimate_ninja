@@ -72,17 +72,17 @@ impl GuardHeavy {
                 }
             }
             GuardState::Walk => {
-                if qrand::gen_range(1., 1000.) <= 2.5 || self.guard.is_tutorial {
-                    self.guard.set_lookout(0.3, 0.4, 1., 2.);
+                if qrand::gen_range(1., 1000.) <= 5. || self.guard.is_tutorial {
+                    self.guard.set_lookout(0.3, 0.4, 4., 6.);
                     self.guard.set_large_look_component();
                 }
 
-                self.guard.do_move(rect_objects, 2., 4.);
+                self.guard.do_move(rect_objects, 5., 7.);
                 self.set_speed(constants::GUARD_SPEED_MEDIUM);
             }
             GuardState::Alert => {
                 self.guard.set_large_look_component();
-                self.guard.do_move(rect_objects, 2., 4.);
+                self.guard.do_move(rect_objects, 5., 7.);
                 self.set_speed(constants::GUARD_SPEED_FAST);
             }
         };

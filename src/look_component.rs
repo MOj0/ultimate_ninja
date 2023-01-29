@@ -124,7 +124,8 @@ impl LookComponent {
             .rays
             .iter()
             .map(|ray| {
-                let angle = -constants::PI / 2. - util::get_vec_angle(self.look_at);
+                // let angle = -constants::PI / 2. - util::get_vec_angle(self.look_at);
+                let angle = -constants::PI / 2. - source.angle;
                 let rotated_ray = util::rotate_point_around_center(*ray, glam::vec2(0., 0.), angle);
                 (
                     source.position.x,
@@ -181,6 +182,48 @@ impl LookComponent {
             .map(|(wall_idx, ray_scale)| (wall_idx.unwrap(), *ray_scale))
             .collect::<Vec<(usize, f32)>>()
     }
+
+    // TODO: REMOVE?
+    // pub fn compute_center_ray_scale(
+    //     &self,
+    //     source: &TransformComponent,
+    //     rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
+    // ) -> f32 {
+    //     let ray = self.rays[(self.rays.len() as f32 / 2.) as usize];
+    //     let angle = -constants::PI / 2. - util::get_vec_angle(self.look_at);
+    //     let rotated_ray = util::rotate_point_around_center(ray, glam::vec2(0., 0.), angle);
+
+    //     let ray_line = (
+    //         source.position.x,
+    //         source.position.y,
+    //         source.position.x + rotated_ray.x,
+    //         source.position.y + rotated_ray.y,
+    //     );
+
+    //     rect_objects
+    //         .iter()
+    //         .filter_map(|(rect, _)| {
+    //             let intersect_point = util::line_rect_intersection(
+    //                 ray_line.0, ray_line.1, ray_line.2, ray_line.3, rect,
+    //             );
+
+    //             if let Some(point) = intersect_point {
+    //                 return Some(point);
+    //             }
+    //             None
+    //         })
+    //         .min_by_key(|intersect_point| {
+    //             ((ray_line.0 - intersect_point.x).abs() + (ray_line.1 - intersect_point.y).abs())
+    //                 as u32
+    //         })
+    //         .map_or_else(
+    //             || 1.,
+    //             |min_intersection_point| {
+    //                 (glam::vec2(ray_line.0, ray_line.1) - min_intersection_point).length()
+    //                     / ray.length()
+    //             },
+    //         )
+    // }
 }
 
 pub fn system(game_state: &mut Game) {

@@ -47,8 +47,13 @@ impl ComputeMoveComponent {
     pub fn get_move_direction(
         &self,
         source: &TransformComponent,
+        dist_to_wall_norm: f32,
         rect_objects: &Vec<(&ggez::graphics::Rect, isize)>,
     ) -> glam::Vec2 {
+        if dist_to_wall_norm < 1. {
+            return util::vec_from_angle(source.angle + (1. - dist_to_wall_norm) * constants::PI);
+        }
+
         let ray_lines: Vec<(f32, f32, f32, f32)> = self
             .rays
             .iter()

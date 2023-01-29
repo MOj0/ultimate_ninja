@@ -250,7 +250,7 @@ pub fn get_vec_angle(v: glam::Vec2) -> f32 {
 }
 
 pub fn lerp(from: f32, to: f32, delta: f32) -> f32 {
-    (1.0 - delta) * from + delta * to
+    from + delta * (to - from)
 }
 
 pub fn vec_lerp(from: glam::Vec2, to: glam::Vec2, delta: f32) -> glam::Vec2 {
