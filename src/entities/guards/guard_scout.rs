@@ -83,6 +83,7 @@ impl GuardScout {
 
                     self.scout_factor = 1.;
                     self.guard.set_large_look_component();
+                    return;
                 }
 
                 self.guard.do_move(rect_objects, 5., 7.);

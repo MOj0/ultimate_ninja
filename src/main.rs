@@ -35,9 +35,6 @@ use ggez::input::MouseButton;
 use ggez::miniquad;
 use ggez::{audio, graphics, Context, GameResult};
 
-// TODO: Improve guard movement
-// TODO: Scaling for different resolutions (handle camera - ortographic...)
-
 #[derive(PartialEq)]
 pub enum GameState {
     Menu,
@@ -63,7 +60,6 @@ pub struct Game {
     walls: Vec<entities::wall::Wall>,
     floor_tiles: Vec<tile_component::TileComponent>,
     exit: entities::exit::Exit,
-    double_press_timer: Option<f32>,
     sound_collection: SoundCollection,
     mouse_input_handler: MouseInputHandler,
     particle_system: particle_system::ParticleSystem,
@@ -72,7 +68,7 @@ pub struct Game {
     are_guards_alerted: bool,
     debug_draw: bool,
     is_touch_joystick_activated: bool,
-    menu_rectangle: graphics::Mesh,
+    menu_rectangle: graphics::MeshBatch,
     menu_square: graphics::Mesh,
     grid_line: graphics::Mesh,
     n_objects: usize,
@@ -243,7 +239,7 @@ impl Game {
 
         let level_idx = 0;
 
-        let menu_rectangle = graphics::Mesh::new_rounded_rectangle(
+        let mr = graphics::Mesh::new_rounded_rectangle(
             ctx,
             quad_ctx,
             graphics::DrawMode::fill(),
@@ -252,6 +248,7 @@ impl Game {
             graphics::Color::new(0.25, 0.25, 0.25, 0.6),
         )
         .unwrap();
+        let menu_rectangle = graphics::MeshBatch::new(mr).unwrap();
 
         let menu_square = graphics::Mesh::new_rounded_rectangle(
             ctx,
@@ -297,7 +294,6 @@ impl Game {
             walls: vec![],
             floor_tiles: vec![],
             exit,
-            double_press_timer: None,
             sound_collection,
             mouse_input_handler,
             particle_system,
@@ -445,7 +441,7 @@ impl Game {
     }
 
     fn draw_menu(
-        &self,
+        &mut self,
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
@@ -459,12 +455,18 @@ impl Game {
             )),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_PLAY_POS),
-        )?;
+        self.menu_rectangle.clear();
+
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_PLAY_POS));
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_INFO_POS));
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS));
+
+        self.menu_rectangle
+            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
+
         graphics::draw(
             ctx,
             quad_ctx,
@@ -481,12 +483,6 @@ impl Game {
         graphics::draw(
             ctx,
             quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_INFO_POS),
-        )?;
-        graphics::draw(
-            ctx,
-            quad_ctx,
             &util::make_text("Info".into(), 36.),
             graphics::DrawParam::default().dest(
                 constants::BTN_INFO_POS
@@ -495,13 +491,6 @@ impl Game {
                         constants::HEIGHT as f32 * 0.033,
                     ),
             ),
-        )?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS),
         )?;
 
         graphics::draw(
@@ -618,7 +607,7 @@ impl Game {
     }
 
     fn draw_info(
-        &self,
+        &mut self,
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
@@ -632,12 +621,22 @@ impl Game {
             )),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_BACK_POS),
-        )?;
+        self.menu_rectangle.clear();
+
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BACK_POS));
+        self.menu_rectangle.add(
+            graphics::DrawParam::default()
+                .dest(glam::vec2(
+                    constants::WIDTH as f32 * 0.035,
+                    constants::HEIGHT as f32 * 0.4,
+                ))
+                .scale(glam::vec2(3.2, 4.35)),
+        );
+
+        self.menu_rectangle
+            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
+
         graphics::draw(
             ctx,
             quad_ctx,
@@ -654,25 +653,14 @@ impl Game {
         graphics::draw(
             ctx,
             quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default()
-                .dest(glam::vec2(
-                    constants::WIDTH as f32 * 0.035,
-                    constants::HEIGHT as f32 * 0.4,
-                ))
-                .scale(glam::vec2(3.2, 4.35)),
-        )?;
-        graphics::draw(
-            ctx,
-            quad_ctx,
             &util::make_text(
                 "Eliminate the green target\n
 Do not get spotted by guards\n
 Move with WASD or arrow keys\n
 Sprint with Shift, sneak with Ctrl\n
-Hold F key for stealth\n
-Double-press F to place a teleport marker at your position\n
-Double-click F again to teleport there\n
+Hold E key for stealth\n
+Press F to place a teleport marker at your position\n
+Press F again to teleport there\n
 Be wary of your stamina\n
 When you complete your mission, a pathway to the next level will appear"
                     .into(),
@@ -702,12 +690,22 @@ When you complete your mission, a pathway to the next level will appear"
             )),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_BACK_POS),
-        )?;
+        self.menu_rectangle.clear();
+
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BACK_POS));
+        self.menu_rectangle.add(
+            graphics::DrawParam::default()
+                .dest(glam::vec2(
+                    constants::WIDTH as f32 * 0.0375,
+                    constants::HEIGHT as f32 * 0.4166,
+                ))
+                .scale(glam::vec2(3., 4.55)),
+        );
+
+        self.menu_rectangle
+            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
+
         graphics::draw(
             ctx,
             quad_ctx,
@@ -719,18 +717,6 @@ When you complete your mission, a pathway to the next level will appear"
                         constants::HEIGHT as f32 * 0.033,
                     ),
             ),
-        )?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default()
-                .dest(glam::vec2(
-                    constants::WIDTH as f32 * 0.0375,
-                    constants::HEIGHT as f32 * 0.4166,
-                ))
-                .scale(glam::vec2(3., 4.55)),
         )?;
 
         if self.leaderboard_str.is_none()
@@ -764,16 +750,25 @@ When you complete your mission, a pathway to the next level will appear"
     }
 
     fn draw_end_screen(
-        &self,
+        &mut self,
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS),
-        )?;
+        self.menu_rectangle.clear();
+
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS));
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS));
+        self.menu_rectangle.add(
+            graphics::DrawParam::default()
+                .dest(glam::vec2(180., 410.))
+                .scale(glam::vec2(2., 1.)),
+        );
+
+        self.menu_rectangle
+            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
+
         graphics::draw(
             ctx,
             quad_ctx,
@@ -782,12 +777,6 @@ When you complete your mission, a pathway to the next level will appear"
                 .dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(80., 20.)),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS),
-        )?;
         graphics::draw(
             ctx,
             quad_ctx,
@@ -833,14 +822,6 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::DrawParam::default().dest(glam::vec2(200., 375.)),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.menu_rectangle,
-            graphics::DrawParam::default()
-                .dest(glam::vec2(180., 410.))
-                .scale(glam::vec2(2., 1.)),
-        )?;
         graphics::draw(
             ctx,
             quad_ctx,
@@ -1086,18 +1067,29 @@ When you complete your mission, a pathway to the next level will appear"
         self.overlay_system.draw(ctx, quad_ctx, &self.camera)?;
 
         if self.game_state == GameState::GameOver {
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
+            self.menu_rectangle.clear();
+
+            self.menu_rectangle.add(
                 graphics::DrawParam::default()
                     .dest(glam::vec2(
                         constants::WIDTH as f32 * 0.4,
                         constants::HEIGHT as f32 * 0.4166,
                     ))
                     .color(graphics::Color::BLACK),
-            )
-            .unwrap();
+            );
+            self.menu_rectangle.add(
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_LEFT_POS)
+                    .color(graphics::Color::BLACK),
+            );
+            self.menu_rectangle.add(
+                graphics::DrawParam::default()
+                    .dest(constants::BTN_BOTTOM_RIGHT_POS)
+                    .color(graphics::Color::BLACK),
+            );
+
+            self.menu_rectangle
+                .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
 
             graphics::queue_text(
                 ctx,
@@ -1108,16 +1100,6 @@ When you complete your mission, a pathway to the next level will appear"
                 ),
                 Some(graphics::Color::RED),
             );
-
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
-                graphics::DrawParam::default()
-                    .dest(constants::BTN_BOTTOM_LEFT_POS)
-                    .color(graphics::Color::BLACK),
-            )
-            .unwrap();
 
             graphics::queue_text(
                 ctx,
@@ -1130,16 +1112,6 @@ When you complete your mission, a pathway to the next level will appear"
                 None,
             );
 
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
-                graphics::DrawParam::default()
-                    .dest(constants::BTN_BOTTOM_RIGHT_POS)
-                    .color(graphics::Color::BLACK),
-            )
-            .unwrap();
-
             graphics::queue_text(
                 ctx,
                 &util::make_text("Restart".to_owned(), 32.),
@@ -1151,36 +1123,29 @@ When you complete your mission, a pathway to the next level will appear"
                 None,
             );
         } else if self.game_state == GameState::Pause {
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
+            self.menu_rectangle.clear();
+
+            self.menu_rectangle.add(
                 graphics::DrawParam::default()
                     .dest(glam::vec2(
                         constants::WIDTH as f32 * 0.4,
                         constants::HEIGHT as f32 * 0.4166,
                     ))
                     .color(graphics::Color::BLACK),
-            )
-            .unwrap();
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
+            );
+            self.menu_rectangle.add(
                 graphics::DrawParam::default()
                     .dest(constants::BTN_BOTTOM_LEFT_POS)
                     .color(graphics::Color::BLACK),
-            )
-            .unwrap();
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.menu_rectangle,
+            );
+            self.menu_rectangle.add(
                 graphics::DrawParam::default()
                     .dest(constants::BTN_BOTTOM_RIGHT_POS)
                     .color(graphics::Color::BLACK),
-            )
-            .unwrap();
+            );
+
+            self.menu_rectangle
+                .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
 
             graphics::queue_text(
                 ctx,
@@ -1379,7 +1344,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         quad_ctx: &mut miniquad::Context,
         keycode: KeyCode,
         _keymods: KeyMods,
-        repeat: bool,
+        _repeat: bool,
     ) {
         if self.game_state == GameState::EndScreen {
             if keycode == KeyCode::Backspace {
@@ -1401,36 +1366,22 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             return;
         }
 
-        if keycode != KeyCode::F {
-            self.double_press_timer = None;
-        }
-
         match keycode {
             KeyCode::W | KeyCode::Up => self.player.set_y_dir(-1.),
             KeyCode::S | KeyCode::Down => self.player.set_y_dir(1.),
             KeyCode::A | KeyCode::Left => self.player.set_x_dir(-1.),
             KeyCode::D | KeyCode::Right => self.player.set_x_dir(1.),
+            KeyCode::E => self.player.set_stealth_intent(true),
             KeyCode::F => {
-                let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
-
                 if self.game_state == GameState::GameOver {
                     return;
                 }
 
-                if repeat {
-                    self.player.set_stealth_intent(true);
-                } else if curr_t - self.double_press_timer.unwrap_or(-1.)
-                    < constants::DOUBLE_PRESS_TIME
-                {
-                    self.player.teleport_action(
-                        ctx,
-                        &mut self.sound_collection,
-                        &mut self.particle_system,
-                    );
-                    self.double_press_timer = None;
-                } else {
-                    self.double_press_timer = Some(curr_t);
-                }
+                self.player.teleport_action(
+                    ctx,
+                    &mut self.sound_collection,
+                    &mut self.particle_system,
+                );
             }
             KeyCode::LeftControl | KeyCode::C => {
                 self.player.set_move_type(entities::player::MoveType::Slow)
@@ -1438,7 +1389,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             KeyCode::LeftShift => self
                 .player
                 .set_move_type(entities::player::MoveType::Sprint),
-            KeyCode::Q | KeyCode::E => entities::player::try_attack_guard(ctx, self),
+            KeyCode::Q => entities::player::try_attack_guard(ctx, self),
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
             KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
             KeyCode::B => self.debug_draw = !self.debug_draw,
@@ -1472,7 +1423,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             && self.player.move_component.direction.x > 0.
         {
             self.player.set_x_dir(0.);
-        } else if keycode == KeyCode::F {
+        } else if keycode == KeyCode::E {
             self.player.set_stealth_intent(false);
         } else if keycode == KeyCode::LeftControl
             || keycode == KeyCode::C
@@ -1605,7 +1556,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                                 .skip(level::TUTORIAL_COUNT)
                                 .sum::<f32>();
                             self.network_system.do_submit_time_and_reqeust_leaderboard(
-                                self.player_name.clone(),
+                                self.player_name.trim().to_owned(),
                                 total_time,
                             );
 

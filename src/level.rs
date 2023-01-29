@@ -200,10 +200,10 @@ pub fn system(game_state: &mut Game) {
 
             let mut pos =
                 game_state.exit.transform.position + glam::vec2(0., constants::ENTITY_SIZE * 5.);
-            let mut text = "You also have some special abilities which drain your stamina\nOne of them is teleport\nTry double-pressing the F key somewhere here to place the marker";
+            let mut text = "You also have some special abilities which drain your stamina\nOne of them is teleport\nTry pressing the F key somewhere here to place the marker";
             if game_state.target.is_dead() {
                 pos = game_state.player.transform.position;
-                text = "To teleport back\ndouble-press the F key"
+                text = "To teleport back\npress the F key"
             } else if game_state.player.teleport.location.is_some() {
                 pos = glam::vec2(
                     constants::MAX_WORLD_X as f32 / 2.,
@@ -236,7 +236,7 @@ pub fn system(game_state: &mut Game) {
             if (game_state.player.transform.position - glam::vec2(500., 460.)).length() > 50. {
                 pos = game_state.guards_basic[0].guard.transform.position
                     + glam::vec2(0., constants::ENTITY_SIZE * 3.);
-                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl or C key\nEliminate with Q or E";
+                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl or C key\nEliminate with Q";
             }
 
             game_state.overlay_system.set_pos_at(
@@ -297,7 +297,7 @@ pub fn system(game_state: &mut Game) {
 
             let mut pos = game_state.player.transform.position;
             let mut text =
-                "Your second ability is stealth\nActivate it by holding the F key\nYou cannot move while being stealth\nTry to eliminate the guard";
+                "Your second ability is stealth\nActivate it by holding the E key\nYou cannot move while being stealth\nTry to eliminate the guard";
 
             if game_state.target.is_dead() {
                 pos = glam::vec2(645., 80.);

@@ -56,6 +56,7 @@ impl GuardBasic {
             GuardState::Walk => {
                 if qrand::gen_range(1., 1000.) <= 5. || self.guard.is_tutorial {
                     self.guard.set_lookout(0.5, 0.9, 3., 5.);
+                    return;
                 }
 
                 self.guard.do_move(rect_objects, 5., 7.);

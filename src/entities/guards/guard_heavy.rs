@@ -75,6 +75,7 @@ impl GuardHeavy {
                 if qrand::gen_range(1., 1000.) <= 5. || self.guard.is_tutorial {
                     self.guard.set_lookout(0.3, 0.4, 4., 6.);
                     self.guard.set_large_look_component();
+                    return;
                 }
 
                 self.guard.do_move(rect_objects, 5., 7.);
