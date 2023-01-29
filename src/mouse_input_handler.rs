@@ -64,6 +64,7 @@ impl MouseInputHandler {
     pub fn handle_menu_pressed(
         &self,
         game_state: &GameState,
+        screen_size: (f32, f32),
         mx: f32,
         my: f32,
     ) -> Option<GameState> {
@@ -71,6 +72,7 @@ impl MouseInputHandler {
 
         if *game_state == GameState::Menu {
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_PLAY_POS,
                 mouse_vec,
@@ -79,6 +81,7 @@ impl MouseInputHandler {
             }
 
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_INFO_POS,
                 mouse_vec,
@@ -87,6 +90,7 @@ impl MouseInputHandler {
             }
 
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
@@ -97,6 +101,7 @@ impl MouseInputHandler {
 
         if *game_state == GameState::Info || *game_state == GameState::Leaderboard {
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BACK_POS,
                 mouse_vec,
@@ -107,12 +112,14 @@ impl MouseInputHandler {
 
         if *game_state == GameState::GameOver || *game_state == GameState::Pause {
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_LEFT_POS,
                 mouse_vec,
             ) {
                 return Some(GameState::Menu);
             } else if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
@@ -123,6 +130,7 @@ impl MouseInputHandler {
 
         if *game_state == GameState::EndScreen {
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_RIGHT_POS,
                 mouse_vec,
@@ -131,6 +139,7 @@ impl MouseInputHandler {
             }
 
             if util::rect_contains_point(
+                screen_size,
                 constants::BTN_DIM_RECT,
                 constants::BTN_BOTTOM_LEFT_POS,
                 mouse_vec,
@@ -183,7 +192,11 @@ impl MouseInputHandler {
         None
     }
 
-    pub fn get_move_direction(&mut self, mouse_position: glam::Vec2) -> Option<glam::Vec2> {
+    pub fn get_move_direction(
+        &mut self,
+        screen_size: (f32, f32),
+        mouse_position: glam::Vec2,
+    ) -> Option<glam::Vec2> {
         if !self.is_pressed {
             return None;
         }
@@ -191,11 +204,22 @@ impl MouseInputHandler {
         self.pressed_time = None;
         self.hold_time = None;
 
-        let diff = mouse_position - self.center;
+        let scale = glam::vec2(
+            screen_size.0 / constants::WIDTH as f32,
+            screen_size.1 / constants::HEIGHT as f32,
+        );
+
+        let diff = mouse_position - self.center * scale;
         let diff_len = diff.length();
         let diff_normalized = diff.normalize_or_zero();
 
-        self.direction_offset = diff_normalized * self.draw_scale.min(diff_len);
+        let sc_x = constants::WIDTH as f32 / screen_size.0;
+        let sc_y = constants::HEIGHT as f32 / screen_size.1;
+
+        self.direction_offset = glam::vec2(
+            diff_normalized.x * (diff_len * sc_x).min(self.draw_scale),
+            diff_normalized.y * (diff_len * sc_y).min(self.draw_scale),
+        );
 
         (diff_len > self.draw_scale)
             .then(|| diff_normalized)

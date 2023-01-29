@@ -303,7 +303,20 @@ pub fn compute_animation_duration(speed: f32) -> f32 {
     speed.recip() * constants::ANIMATION_SPEED
 }
 
-pub fn rect_contains_point(rect_dim: glam::Vec2, rect_pos: glam::Vec2, point: glam::Vec2) -> bool {
+pub fn rect_contains_point(
+    screen_size: (f32, f32),
+    rect_dim: glam::Vec2,
+    rect_pos: glam::Vec2,
+    point: glam::Vec2,
+) -> bool {
+    let scale = glam::vec2(
+        screen_size.0 / constants::WIDTH as f32,
+        screen_size.1 / constants::HEIGHT as f32,
+    );
+
+    let rect_dim = rect_dim * scale;
+    let rect_pos = rect_pos * scale;
+
     point.x >= rect_pos.x
         && point.x <= rect_pos.x + rect_dim.x
         && point.y >= rect_pos.y

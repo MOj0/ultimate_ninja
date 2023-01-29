@@ -1508,8 +1508,10 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                 if self.game_state == GameState::Menu {
                     let mut setting_changed = false;
+                    let screen_size = quad_ctx.screen_size();
 
                     if util::rect_contains_point(
+                        screen_size,
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS1,
                         glam::vec2(x, y),
@@ -1518,6 +1520,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                         setting_changed = true;
                     } else if util::rect_contains_point(
+                        screen_size,
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS2,
                         glam::vec2(x, y),
@@ -1527,6 +1530,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                         setting_changed = true;
                     } else if util::rect_contains_point(
+                        screen_size,
                         constants::BTN_DIM_SQUARE,
                         constants::BTN_BOTTOM_LEFT_POS3,
                         glam::vec2(x, y),
@@ -1548,10 +1552,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     || self.game_state == GameState::EndScreen
                     || self.game_state == GameState::Pause
                 {
-                    if let Some(new_game_state) =
-                        self.mouse_input_handler
-                            .handle_menu_pressed(&self.game_state, x, y)
-                    {
+                    if let Some(new_game_state) = self.mouse_input_handler.handle_menu_pressed(
+                        &self.game_state,
+                        quad_ctx.screen_size(),
+                        x,
+                        y,
+                    ) {
                         if new_game_state == GameState::Game {
                             let is_proceed = self.game_state != GameState::GameOver
                                 && self.game_state != GameState::Pause;
@@ -1662,7 +1668,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
     ) {
         let direction = self
             .mouse_input_handler
-            .get_move_direction(glam::vec2(x, y));
+            .get_move_direction(_quad_ctx.screen_size(), glam::vec2(x, y));
 
         if let Some(dir) = direction {
             self.player.set_dir(dir);
@@ -1680,6 +1686,8 @@ fn main() -> GameResult {
         .window_title("Ultimate Ninja".to_owned())
         .window_width(constants::WIDTH as i32)
         .window_height(constants::HEIGHT as i32)
+        .window_resizable(true)
+        .high_dpi(true)
         .cache(Some(include_bytes!("resources.tar")));
 
     ggez::start(conf, |mut context, mut quad_ctx| {
