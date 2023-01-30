@@ -198,18 +198,31 @@ pub fn system(game_state: &mut Game) {
             game_state.overlay_system.set_active_at(1, overlay_active);
             game_state.overlay_system.set_active_at(2, overlay_active);
 
+            let teleport_key = game_state
+                .keybind_map
+                .get("teleport")
+                .unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::F))
+                .to_string();
+            let sprint_key = game_state
+                .keybind_map
+                .get("sprint")
+                .unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Space))
+                .to_string();
+
             let mut pos =
                 game_state.exit.transform.position + glam::vec2(0., constants::ENTITY_SIZE * 5.);
-            let mut text = "You also have some special abilities which drain your stamina\nOne of them is teleport\nTry pressing the F key somewhere here to place the marker";
+
+            let mut text = format!("You also have some special abilities which drain your stamina\nOne of them is teleport\nTry pressing the {} key somewhere here to place the marker", teleport_key);
+
             if game_state.target.is_dead() {
                 pos = game_state.player.transform.position;
-                text = "To teleport back\npress the F key"
+                text = format!("To teleport back\npress the {} key", teleport_key);
             } else if game_state.player.teleport.location.is_some() {
                 pos = glam::vec2(
                     constants::MAX_WORLD_X as f32 / 2.,
                     constants::MAX_WORLD_Y as f32 / 2.,
                 );
-                text = "You can sprint by\nholding the Shift key";
+                text = format!("You can sprint by\nholding the {} key", sprint_key);
             }
 
             game_state.overlay_system.set_pos_at(
@@ -222,21 +235,33 @@ pub fn system(game_state: &mut Game) {
                 .overlay_system
                 .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
 
-            game_state.overlay_system.set_text_at(2, text);
+            game_state.overlay_system.set_text_at(2, &text);
         }
         2 => {
             let overlay_active = !game_state.guards_basic[0].is_dead();
             game_state.overlay_system.set_active_at(1, overlay_active);
             game_state.overlay_system.set_active_at(2, overlay_active);
 
+            let sneak_key = game_state
+                .keybind_map
+                .get("sneak")
+                .unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::S))
+                .to_string();
+            let attack_key = game_state
+                .keybind_map
+                .get("attack")
+                .unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::A))
+                .to_string();
+
             let mut pos =
                 game_state.player.transform.position + glam::vec2(0., constants::ENTITY_SIZE * 3.);
-            let mut text =
-                "Target will usually have some guards\nYou can avoid them\nor eliminate them aswell\nBe wary\nguards can hear your footsteps";
+            let mut text = format!(
+                "Target will usually have some guards\nYou can avoid them\nor eliminate them aswell\nBe wary\nguards can hear your footsteps");
+
             if (game_state.player.transform.position - glam::vec2(500., 460.)).length() > 50. {
                 pos = game_state.guards_basic[0].guard.transform.position
                     + glam::vec2(0., constants::ENTITY_SIZE * 3.);
-                text = "Try to eliminate this guard\nApproach silently by holding the Ctrl or C key\nEliminate with Q";
+                text = format!( "Try to eliminate this guard\nApproach silently by holding the {} key\nEliminate with {} key", sneak_key, attack_key);
             }
 
             game_state.overlay_system.set_pos_at(
@@ -249,7 +274,7 @@ pub fn system(game_state: &mut Game) {
                 .overlay_system
                 .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
 
-            game_state.overlay_system.set_text_at(2, text);
+            game_state.overlay_system.set_text_at(2, &text);
         }
         3 => {
             let overlay_active = !game_state.exit.player_exited;
@@ -295,19 +320,25 @@ pub fn system(game_state: &mut Game) {
                 game_state.overlay_system.set_active_at(2, false);
             }
 
+            let stealth_key = game_state
+                .keybind_map
+                .get("stealth")
+                .unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::A))
+                .to_string();
+
             let mut pos = game_state.player.transform.position;
             let mut text =
-                "Your second ability is stealth\nActivate it by holding the E key\nYou cannot move while being stealth\nTry to eliminate the guard";
+                format!("Your second ability is stealth\nActivate it by holding the {} key\nYou cannot move while being stealth\nTry to eliminate the guard", stealth_key);
 
             if game_state.target.is_dead() {
                 pos = glam::vec2(645., 80.);
-                text = "Remember, your score is determined\nby the amount of time needed\nfor completing each level\nso try to complete it as fast as possible";
+                text = format!("Remember, your score is determined\nby the amount of time needed\nfor completing each level\nso try to complete it as fast as possible");
             }
 
             game_state
                 .overlay_system
                 .set_pos_at(2, pos + glam::vec2(0., constants::ENTITY_SIZE * 3.));
-            game_state.overlay_system.set_text_at(2, text);
+            game_state.overlay_system.set_text_at(2, &text);
         }
         _ => (),
     }

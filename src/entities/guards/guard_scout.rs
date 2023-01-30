@@ -71,6 +71,7 @@ impl GuardScout {
                 self.guard.do_lookout(lookout_dir);
 
                 if self.guard.move_interval <= 0. {
+                    self.guard.look_components[0].update(&self.guard.transform, rect_objects);
                     self.guard.guard_state = GuardState::Walk;
                     self.guard.set_small_look_component();
                 } else if self.guard.move_interval <= self.guard.max_move_interval / 2. {

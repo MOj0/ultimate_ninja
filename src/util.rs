@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::fmt;
+
 use crate::animation_component::AnimationComponent;
 use crate::assets::Assets;
 use crate::constants;
@@ -351,9 +354,12 @@ pub fn config_filename() -> String {
     constants::CONFIG_FILENAME.to_owned()
 }
 
-pub fn read_config(filename: &str) -> (bool, bool, bool) {
+pub fn read_config(filename: &str) -> (bool, bool, bool, HashMap<String, MyKeyCode>) {
     let data = std::fs::read_to_string(filename).unwrap_or_default();
     let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
+
+    let mut keybind_map: HashMap<String, MyKeyCode> = HashMap::new();
+
     match config {
         serde_json::Value::Object(m) => {
             let is_muted = m
@@ -372,10 +378,174 @@ pub fn read_config(filename: &str) -> (bool, bool, bool) {
                 .unwrap_or(Some(false))
                 .unwrap_or(false);
 
-            return (is_muted, are_particles_activated, is_skip_tutorial);
+            keybind_map.insert("up".to_owned(), get_keycode(&m, "up", 59));
+            keybind_map.insert("left".to_owned(), get_keycode(&m, "left", 57));
+            keybind_map.insert("down".to_owned(), get_keycode(&m, "down", 58));
+            keybind_map.insert("right".to_owned(), get_keycode(&m, "right", 56));
+            keybind_map.insert("sneak".to_owned(), get_keycode(&m, "sneak", 36));
+            keybind_map.insert("sprint".to_owned(), get_keycode(&m, "sprint", 0));
+            keybind_map.insert("teleport".to_owned(), get_keycode(&m, "teleport", 23));
+            keybind_map.insert("stealth".to_owned(), get_keycode(&m, "stealth", 21));
+            keybind_map.insert("attack".to_owned(), get_keycode(&m, "attack", 18));
+            keybind_map.insert("restart".to_owned(), get_keycode(&m, "restart", 35));
+
+            return (
+                is_muted,
+                are_particles_activated,
+                is_skip_tutorial,
+                keybind_map,
+            );
         }
         _ => (),
     }
 
-    (false, true, false)
+    (false, true, false, HashMap::new())
+}
+
+fn get_keycode(
+    map: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    default: u64,
+) -> MyKeyCode {
+    map.get(key)
+        .and_then(|val| Some(val.as_u64()))
+        .unwrap_or(Some(default))
+        .unwrap_or(default)
+        .into()
+}
+
+pub struct MyKeyCode(pub ggez::event::KeyCode);
+
+impl From<u64> for MyKeyCode {
+    fn from(char: u64) -> Self {
+        match char {
+            0 => MyKeyCode(ggez::event::KeyCode::Space),
+            1 => MyKeyCode(ggez::event::KeyCode::Apostrophe),
+            2 => MyKeyCode(ggez::event::KeyCode::Comma),
+            3 => MyKeyCode(ggez::event::KeyCode::Minus),
+            4 => MyKeyCode(ggez::event::KeyCode::Period),
+            5 => MyKeyCode(ggez::event::KeyCode::Slash),
+            6 => MyKeyCode(ggez::event::KeyCode::Key0),
+            7 => MyKeyCode(ggez::event::KeyCode::Key1),
+            8 => MyKeyCode(ggez::event::KeyCode::Key2),
+            9 => MyKeyCode(ggez::event::KeyCode::Key3),
+            10 => MyKeyCode(ggez::event::KeyCode::Key4),
+            11 => MyKeyCode(ggez::event::KeyCode::Key5),
+            12 => MyKeyCode(ggez::event::KeyCode::Key6),
+            13 => MyKeyCode(ggez::event::KeyCode::Key7),
+            14 => MyKeyCode(ggez::event::KeyCode::Key8),
+            15 => MyKeyCode(ggez::event::KeyCode::Key9),
+            16 => MyKeyCode(ggez::event::KeyCode::Semicolon),
+            17 => MyKeyCode(ggez::event::KeyCode::Equal),
+            18 => MyKeyCode(ggez::event::KeyCode::A),
+            19 => MyKeyCode(ggez::event::KeyCode::B),
+            20 => MyKeyCode(ggez::event::KeyCode::C),
+            21 => MyKeyCode(ggez::event::KeyCode::D),
+            22 => MyKeyCode(ggez::event::KeyCode::E),
+            23 => MyKeyCode(ggez::event::KeyCode::F),
+            24 => MyKeyCode(ggez::event::KeyCode::G),
+            25 => MyKeyCode(ggez::event::KeyCode::H),
+            26 => MyKeyCode(ggez::event::KeyCode::I),
+            27 => MyKeyCode(ggez::event::KeyCode::J),
+            28 => MyKeyCode(ggez::event::KeyCode::K),
+            29 => MyKeyCode(ggez::event::KeyCode::L),
+            30 => MyKeyCode(ggez::event::KeyCode::M),
+            31 => MyKeyCode(ggez::event::KeyCode::N),
+            32 => MyKeyCode(ggez::event::KeyCode::O),
+            33 => MyKeyCode(ggez::event::KeyCode::P),
+            34 => MyKeyCode(ggez::event::KeyCode::Q),
+            35 => MyKeyCode(ggez::event::KeyCode::R),
+            36 => MyKeyCode(ggez::event::KeyCode::S),
+            37 => MyKeyCode(ggez::event::KeyCode::T),
+            38 => MyKeyCode(ggez::event::KeyCode::U),
+            39 => MyKeyCode(ggez::event::KeyCode::V),
+            40 => MyKeyCode(ggez::event::KeyCode::W),
+            41 => MyKeyCode(ggez::event::KeyCode::X),
+            42 => MyKeyCode(ggez::event::KeyCode::Y),
+            43 => MyKeyCode(ggez::event::KeyCode::Z),
+            44 => MyKeyCode(ggez::event::KeyCode::LeftBracket),
+            45 => MyKeyCode(ggez::event::KeyCode::Backslash),
+            46 => MyKeyCode(ggez::event::KeyCode::RightBracket),
+            47 => MyKeyCode(ggez::event::KeyCode::GraveAccent),
+            48 => MyKeyCode(ggez::event::KeyCode::World1),
+            49 => MyKeyCode(ggez::event::KeyCode::World2),
+            50 => MyKeyCode(ggez::event::KeyCode::Escape),
+            51 => MyKeyCode(ggez::event::KeyCode::Enter),
+            52 => MyKeyCode(ggez::event::KeyCode::Tab),
+            53 => MyKeyCode(ggez::event::KeyCode::Backspace),
+            54 => MyKeyCode(ggez::event::KeyCode::Insert),
+            55 => MyKeyCode(ggez::event::KeyCode::Delete),
+            56 => MyKeyCode(ggez::event::KeyCode::Right),
+            57 => MyKeyCode(ggez::event::KeyCode::Left),
+            58 => MyKeyCode(ggez::event::KeyCode::Down),
+            59 => MyKeyCode(ggez::event::KeyCode::Up),
+            60 => MyKeyCode(ggez::event::KeyCode::PageUp),
+            61 => MyKeyCode(ggez::event::KeyCode::PageDown),
+            62 => MyKeyCode(ggez::event::KeyCode::Home),
+            63 => MyKeyCode(ggez::event::KeyCode::End),
+            64 => MyKeyCode(ggez::event::KeyCode::CapsLock),
+            65 => MyKeyCode(ggez::event::KeyCode::ScrollLock),
+            66 => MyKeyCode(ggez::event::KeyCode::NumLock),
+            67 => MyKeyCode(ggez::event::KeyCode::PrintScreen),
+            68 => MyKeyCode(ggez::event::KeyCode::Pause),
+            69 => MyKeyCode(ggez::event::KeyCode::F1),
+            70 => MyKeyCode(ggez::event::KeyCode::F2),
+            71 => MyKeyCode(ggez::event::KeyCode::F3),
+            72 => MyKeyCode(ggez::event::KeyCode::F4),
+            73 => MyKeyCode(ggez::event::KeyCode::F5),
+            74 => MyKeyCode(ggez::event::KeyCode::F6),
+            75 => MyKeyCode(ggez::event::KeyCode::F7),
+            76 => MyKeyCode(ggez::event::KeyCode::F8),
+            77 => MyKeyCode(ggez::event::KeyCode::F9),
+            78 => MyKeyCode(ggez::event::KeyCode::F10),
+            79 => MyKeyCode(ggez::event::KeyCode::F11),
+            80 => MyKeyCode(ggez::event::KeyCode::F12),
+            81 => MyKeyCode(ggez::event::KeyCode::F13),
+            82 => MyKeyCode(ggez::event::KeyCode::F14),
+            83 => MyKeyCode(ggez::event::KeyCode::F15),
+            84 => MyKeyCode(ggez::event::KeyCode::F16),
+            85 => MyKeyCode(ggez::event::KeyCode::F17),
+            86 => MyKeyCode(ggez::event::KeyCode::F18),
+            87 => MyKeyCode(ggez::event::KeyCode::F19),
+            88 => MyKeyCode(ggez::event::KeyCode::F20),
+            89 => MyKeyCode(ggez::event::KeyCode::F21),
+            90 => MyKeyCode(ggez::event::KeyCode::F22),
+            91 => MyKeyCode(ggez::event::KeyCode::F23),
+            92 => MyKeyCode(ggez::event::KeyCode::F24),
+            93 => MyKeyCode(ggez::event::KeyCode::F25),
+            94 => MyKeyCode(ggez::event::KeyCode::Kp0),
+            95 => MyKeyCode(ggez::event::KeyCode::Kp1),
+            96 => MyKeyCode(ggez::event::KeyCode::Kp2),
+            97 => MyKeyCode(ggez::event::KeyCode::Kp3),
+            98 => MyKeyCode(ggez::event::KeyCode::Kp4),
+            99 => MyKeyCode(ggez::event::KeyCode::Kp5),
+            100 => MyKeyCode(ggez::event::KeyCode::Kp6),
+            101 => MyKeyCode(ggez::event::KeyCode::Kp7),
+            102 => MyKeyCode(ggez::event::KeyCode::Kp8),
+            103 => MyKeyCode(ggez::event::KeyCode::Kp9),
+            104 => MyKeyCode(ggez::event::KeyCode::KpDecimal),
+            105 => MyKeyCode(ggez::event::KeyCode::KpDivide),
+            106 => MyKeyCode(ggez::event::KeyCode::KpMultiply),
+            107 => MyKeyCode(ggez::event::KeyCode::KpSubtract),
+            108 => MyKeyCode(ggez::event::KeyCode::KpAdd),
+            109 => MyKeyCode(ggez::event::KeyCode::KpEnter),
+            110 => MyKeyCode(ggez::event::KeyCode::KpEqual),
+            111 => MyKeyCode(ggez::event::KeyCode::LeftShift),
+            112 => MyKeyCode(ggez::event::KeyCode::LeftControl),
+            113 => MyKeyCode(ggez::event::KeyCode::LeftAlt),
+            114 => MyKeyCode(ggez::event::KeyCode::LeftSuper),
+            115 => MyKeyCode(ggez::event::KeyCode::RightShift),
+            116 => MyKeyCode(ggez::event::KeyCode::RightControl),
+            117 => MyKeyCode(ggez::event::KeyCode::RightAlt),
+            118 => MyKeyCode(ggez::event::KeyCode::RightSuper),
+            119 => MyKeyCode(ggez::event::KeyCode::Menu),
+            _ => MyKeyCode(ggez::event::KeyCode::Unknown),
+        }
+    }
+}
+
+impl fmt::Display for MyKeyCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
 }

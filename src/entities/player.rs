@@ -163,11 +163,9 @@ impl Player {
         sound_collection: &mut SoundCollection,
         particle_system: &mut ParticleSystem,
     ) {
-        if self.teleport.location.is_none()
-            && self.stamina.stamina > constants::TELEPORT_COST_INTIAL
-        {
+        if self.teleport.location.is_none() && self.stamina.stamina > constants::TELEPORT_COST {
             self.teleport.set_location(self.transform.clone());
-            self.stamina.stamina -= constants::TELEPORT_COST_INTIAL;
+            self.stamina.stamina -= constants::TELEPORT_COST;
 
             sound_collection.play(ctx, 2).unwrap_or_default();
         } else if self.stamina.stamina > constants::TELEPORT_COST {

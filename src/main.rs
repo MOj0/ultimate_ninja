@@ -21,6 +21,8 @@ mod tile_component;
 mod transform_component;
 mod util;
 
+use std::collections::HashMap;
+
 use crate::assets::Assets;
 use crate::mouse_input_handler::MouseInputHandler;
 use crate::network_system::NetworkSystem;
@@ -39,6 +41,8 @@ use ggez::{audio, graphics, Context, GameResult};
 pub enum GameState {
     Menu,
     Info,
+    Keybindings,
+    KeybindInput(String),
     Leaderboard,
     SubmitTime,
     Game,
@@ -70,6 +74,8 @@ pub struct Game {
     is_touch_joystick_activated: bool,
     menu_rectangle: graphics::MeshBatch,
     menu_square: graphics::Mesh,
+    keybind_map: HashMap<String, util::MyKeyCode>,
+    keybind_input: Option<util::MyKeyCode>,
     grid_line: graphics::Mesh,
     n_objects: usize,
     curr_level_time: f32,
@@ -83,7 +89,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
-        let (is_muted, are_particles_activated, is_skip_tutorial) =
+        let (is_muted, are_particles_activated, is_skip_tutorial, keybind_map) =
             util::read_config(&util::config_filename());
 
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -304,6 +310,8 @@ impl Game {
             is_touch_joystick_activated: false,
             menu_rectangle,
             menu_square,
+            keybind_map,
+            keybind_input: None,
             grid_line,
             n_objects: 0,
             curr_level_time: 0.,
@@ -462,6 +470,8 @@ impl Game {
         self.menu_rectangle
             .add(graphics::DrawParam::default().dest(constants::BTN_INFO_POS));
         self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_KEYBINDINGS_POS));
+        self.menu_rectangle
             .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS));
 
         self.menu_rectangle
@@ -474,7 +484,7 @@ impl Game {
             graphics::DrawParam::default().dest(
                 constants::BTN_PLAY_POS
                     + glam::vec2(
-                        constants::WIDTH as f32 * 0.115,
+                        constants::WIDTH as f32 * 0.105,
                         constants::HEIGHT as f32 * 0.033,
                     ),
             ),
@@ -487,7 +497,20 @@ impl Game {
             graphics::DrawParam::default().dest(
                 constants::BTN_INFO_POS
                     + glam::vec2(
-                        constants::WIDTH as f32 * 0.115,
+                        constants::WIDTH as f32 * 0.105,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Keybindings".into(), 36.),
+            graphics::DrawParam::default().dest(
+                constants::BTN_KEYBINDINGS_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.02,
                         constants::HEIGHT as f32 * 0.033,
                     ),
             ),
@@ -500,7 +523,7 @@ impl Game {
             graphics::DrawParam::default().dest(
                 constants::BTN_BOTTOM_RIGHT_POS
                     + glam::vec2(
-                        constants::WIDTH as f32 * 0.03425,
+                        constants::WIDTH as f32 * 0.02,
                         constants::HEIGHT as f32 * 0.033,
                     ),
             ),
@@ -669,6 +692,115 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::DrawParam::default().dest(glam::vec2(
                 constants::WIDTH as f32 * 0.08,
                 constants::HEIGHT as f32 * 0.42,
+            )),
+        )?;
+
+        Ok(())
+    }
+
+    fn draw_keybindings(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<(), ggez::GameError> {
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Ultimate Ninja".into(), 42.),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.3525,
+                constants::HEIGHT as f32 * 0.0833,
+            )),
+        )?;
+
+        self.menu_rectangle.clear();
+
+        self.menu_rectangle
+            .add(graphics::DrawParam::default().dest(constants::BTN_BACK_POS));
+        self.menu_rectangle.add(
+            graphics::DrawParam::default()
+                .dest(glam::vec2(
+                    constants::WIDTH as f32 * 0.035,
+                    constants::HEIGHT as f32 * 0.31,
+                ))
+                .scale(glam::vec2(3.2, 5.5)),
+        );
+
+        self.menu_rectangle
+            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text("Back".into(), 36.),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BACK_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.1,
+                        constants::HEIGHT as f32 * 0.033,
+                    ),
+            ),
+        )?;
+
+        let keys = vec![
+            "up", "down", "left", "right", "sneak", "sprint", "stealth", "teleport", "attack",
+            "restart",
+        ];
+        let keys_str = keys
+            .iter()
+            .fold(String::new(), |a, b| format!("{}{}:\n\n", a, b));
+
+        let mut selected_key = None;
+        if let GameState::KeybindInput(sel_key) = &self.game_state {
+            selected_key = Some(sel_key);
+        }
+
+        let mut keybinds = String::new();
+        for &key in keys.iter() {
+            if let Some(sel_key) = selected_key {
+                if key == sel_key {
+                    keybinds.push_str(&format!("\n\n"));
+                    continue;
+                }
+            }
+
+            if let Some(keybind) = self.keybind_map.get(key) {
+                keybinds.push_str(&format!("{}\n\n", keybind));
+            }
+        }
+
+        let offset = 40.;
+        for i in 0..keys.len() {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.menu_square,
+                graphics::DrawParam::default()
+                    .scale(glam::vec2(2.75, 0.75))
+                    .dest(glam::vec2(
+                        constants::WIDTH as f32 * 0.32 - constants::BTN_DIM_SQUARE.x / 4.,
+                        constants::HEIGHT as f32 * 0.34 - constants::BTN_DIM_SQUARE.y / 4.
+                            + offset * i as f32,
+                    )),
+            )?;
+        }
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(keys_str, 20.),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.08,
+                constants::HEIGHT as f32 * 0.34,
+            )),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &util::make_text(keybinds, 20.),
+            graphics::DrawParam::default().dest(glam::vec2(
+                constants::WIDTH as f32 * 0.32,
+                constants::HEIGHT as f32 * 0.34,
             )),
         )?;
 
@@ -1246,7 +1378,17 @@ When you complete your mission, a pathway to the next level will appear"
         {
             "mute": !self.sound_collection.is_on,
             "particles": self.particle_system.is_activated,
-            "skip_tutorial": self.is_skip_tutorial
+            "skip_tutorial": self.is_skip_tutorial,
+            "up": self.keybind_map.get("up").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Up)).0 as u8,
+            "down": self.keybind_map.get("down").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Down)).0 as u8,
+            "left": self.keybind_map.get("left").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Left)).0 as u8,
+            "right": self.keybind_map.get("right").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Right)).0 as u8,
+            "sneak": self.keybind_map.get("sneak").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::S)).0 as u8,
+            "sprint": self.keybind_map.get("sprint").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Space)).0 as u8,
+            "stealth": self.keybind_map.get("stealth").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::D)).0 as u8,
+            "teleport": self.keybind_map.get("teleport").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::F)).0 as u8,
+            "attack": self.keybind_map.get("attack").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::A)).0 as u8,
+            "restart": self.keybind_map.get("restart").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::R)).0 as u8,
         });
 
         std::fs::write(filename, serde_json::to_string_pretty(&json).unwrap()).unwrap();
@@ -1262,8 +1404,24 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         // NOTE: Since this spawns a thread, it is okay to block here
         self.tokio_runtime.block_on(self.network_system.tick());
 
+        // Handle keybind change
+        if let GameState::KeybindInput(key) = &self.game_state {
+            if let Some(keybind) = &self.keybind_input {
+                if keybind.0 != ggez::event::KeyCode::Escape {
+                    self.keybind_map
+                        .insert(key.to_string(), util::MyKeyCode(keybind.0));
+                }
+
+                self.game_state = GameState::Keybindings;
+                self.keybind_input = None;
+            }
+
+            return Ok(());
+        }
+
         if self.game_state == GameState::Menu
             || self.game_state == GameState::Info
+            || self.game_state == GameState::Keybindings
             || self.game_state == GameState::Leaderboard
             || self.game_state == GameState::GameOver
             || self.game_state == GameState::Pause
@@ -1327,6 +1485,14 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             return self.draw_info(ctx, quad_ctx);
         }
 
+        if self.game_state == GameState::Keybindings {
+            return self.draw_keybindings(ctx, quad_ctx);
+        }
+
+        if let GameState::KeybindInput(_) = &self.game_state {
+            return self.draw_keybindings(ctx, quad_ctx);
+        }
+
         if self.game_state == GameState::Leaderboard {
             return self.draw_leaderboard(ctx, quad_ctx);
         }
@@ -1354,6 +1520,11 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             return;
         }
 
+        if let GameState::KeybindInput(_) = &self.game_state {
+            self.keybind_input = Some(util::MyKeyCode(keycode));
+            return;
+        }
+
         if (self.game_state == GameState::Game || self.game_state == GameState::Pause)
             && keycode == KeyCode::Escape
         {
@@ -1366,33 +1537,41 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             return;
         }
 
-        match keycode {
-            KeyCode::W | KeyCode::Up => self.player.set_y_dir(-1.),
-            KeyCode::S | KeyCode::Down => self.player.set_y_dir(1.),
-            KeyCode::A | KeyCode::Left => self.player.set_x_dir(-1.),
-            KeyCode::D | KeyCode::Right => self.player.set_x_dir(1.),
-            KeyCode::E => self.player.set_stealth_intent(true),
-            KeyCode::F => {
-                if self.game_state == GameState::GameOver {
-                    return;
+        for (key, value) in &self.keybind_map {
+            if keycode == value.0 {
+                match key.as_str() {
+                    "up" => self.player.set_y_dir(-1.),
+                    "down" => self.player.set_y_dir(1.),
+                    "left" => self.player.set_x_dir(-1.),
+                    "right" => self.player.set_x_dir(1.),
+                    "stealth" => self.player.set_stealth_intent(true),
+                    "teleport" => {
+                        if self.game_state == GameState::GameOver {
+                            return;
+                        }
+
+                        self.player.teleport_action(
+                            ctx,
+                            &mut self.sound_collection,
+                            &mut self.particle_system,
+                        );
+                    }
+                    "sneak" => self.player.set_move_type(entities::player::MoveType::Slow),
+                    "sprint" => self
+                        .player
+                        .set_move_type(entities::player::MoveType::Sprint),
+                    "attack" => entities::player::try_attack_guard(ctx, self),
+                    "restart" => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
+                    _ => (),
                 }
 
-                self.player.teleport_action(
-                    ctx,
-                    &mut self.sound_collection,
-                    &mut self.particle_system,
-                );
+                break;
             }
-            KeyCode::LeftControl | KeyCode::C => {
-                self.player.set_move_type(entities::player::MoveType::Slow)
-            }
-            KeyCode::LeftShift => self
-                .player
-                .set_move_type(entities::player::MoveType::Sprint),
-            KeyCode::Q => entities::player::try_attack_guard(ctx, self),
+        }
+
+        match keycode {
             KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
-            KeyCode::R => level::load_level(ctx, quad_ctx, self, self.level_idx, false),
-            KeyCode::B => self.debug_draw = !self.debug_draw,
+            KeyCode::B => self.debug_draw = !self.debug_draw, // TODO: Delete this [debugging purposes]
             KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
             KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
             KeyCode::P => entities::guards::alert_all(ctx, self), // TODO: Delete this [debugging purposes]
@@ -1407,27 +1586,62 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         keycode: KeyCode,
         _keymods: KeyMods,
     ) {
-        if (keycode == KeyCode::W || keycode == KeyCode::Up)
+        if (keycode
+            == self
+                .keybind_map
+                .get("up")
+                .unwrap_or(&util::MyKeyCode(KeyCode::Up))
+                .0)
             && self.player.move_component.direction.y < 0.
         {
             self.player.set_y_dir(0.);
-        } else if (keycode == KeyCode::S || keycode == KeyCode::Down)
+        } else if (keycode
+            == self
+                .keybind_map
+                .get("down")
+                .unwrap_or(&util::MyKeyCode(KeyCode::Down))
+                .0)
             && self.player.move_component.direction.y > 0.
         {
             self.player.set_y_dir(0.);
-        } else if (keycode == KeyCode::A || keycode == KeyCode::Left)
+        } else if (keycode
+            == self
+                .keybind_map
+                .get("left")
+                .unwrap_or(&util::MyKeyCode(KeyCode::Left))
+                .0)
             && self.player.move_component.direction.x < 0.
         {
             self.player.set_x_dir(0.);
-        } else if (keycode == KeyCode::D || keycode == KeyCode::Right)
+        } else if (keycode
+            == self
+                .keybind_map
+                .get("right")
+                .unwrap_or(&util::MyKeyCode(KeyCode::Right))
+                .0)
             && self.player.move_component.direction.x > 0.
         {
             self.player.set_x_dir(0.);
-        } else if keycode == KeyCode::E {
+        } else if keycode
+            == self
+                .keybind_map
+                .get("stealth")
+                .unwrap_or(&util::MyKeyCode(KeyCode::D))
+                .0
+        {
             self.player.set_stealth_intent(false);
-        } else if keycode == KeyCode::LeftControl
-            || keycode == KeyCode::C
-            || keycode == KeyCode::LeftShift
+        } else if keycode
+            == self
+                .keybind_map
+                .get("sprint")
+                .unwrap_or(&util::MyKeyCode(KeyCode::Space))
+                .0
+            || keycode
+                == self
+                    .keybind_map
+                    .get("sneak")
+                    .unwrap_or(&util::MyKeyCode(KeyCode::S))
+                    .0
         {
             self.player
                 .set_move_type(entities::player::MoveType::Normal);
@@ -1498,6 +1712,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                 if self.game_state == GameState::Menu
                     || self.game_state == GameState::Info
+                    || self.game_state == GameState::Keybindings
                     || self.game_state == GameState::Leaderboard
                     || self.game_state == GameState::GameOver
                     || self.game_state == GameState::EndScreen
@@ -1533,6 +1748,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                                 self.game_state = GameState::Game
                             }
                         } else {
+                            if self.game_state == GameState::Keybindings
+                                && new_game_state == GameState::Menu
+                            {
+                                self.write_config(&util::config_filename());
+                            }
+
                             self.game_state = new_game_state;
                             self.curr_level_time = 0.;
 
@@ -1543,6 +1764,7 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
 
                         if self.game_state == GameState::Leaderboard
                             && !self.network_system.request_in_progress()
+                            && self.leaderboard_str.is_none()
                         {
                             self.network_system.do_request_leaderboard();
                         }
@@ -1565,6 +1787,40 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         }
                     }
 
+                    if self.game_state == GameState::Keybindings {
+                        let screen_size = quad_ctx.screen_size();
+                        let keybind_button_size =
+                            constants::BTN_DIM_SQUARE * glam::vec2(2.75, 0.75);
+
+                        let offset = 40.;
+                        for i in 0..self.keybind_map.len() {
+                            if util::rect_contains_point(
+                                screen_size,
+                                keybind_button_size,
+                                glam::vec2(
+                                    constants::WIDTH as f32 * 0.32
+                                        - constants::BTN_DIM_SQUARE.x / 4.,
+                                    constants::HEIGHT as f32 * 0.34
+                                        - constants::BTN_DIM_SQUARE.y / 4.
+                                        + offset * i as f32,
+                                ),
+                                glam::vec2(x, y),
+                            ) {
+                                self.game_state = GameState::KeybindInput(
+                                    [
+                                        "up", "down", "left", "right", "sneak", "sprint",
+                                        "stealth", "teleport", "attack", "restart",
+                                    ][i]
+                                        .to_owned(),
+                                );
+                            }
+                        }
+                    }
+
+                    return;
+                }
+
+                if let GameState::KeybindInput(_) = &self.game_state {
                     return;
                 }
 

@@ -51,16 +51,16 @@ pub const ANIMATION_SPEED: f32 = 0.1575;
 pub const DOUBLE_PRESS_TIME: f32 = 0.5; // sec
 pub const HOLD_THRESHOLD_TIME: f32 = 0.4; // sec
 
-pub const TELEPORT_COST_INTIAL: f32 = 25.;
-pub const TELEPORT_COST: f32 = 50.;
+pub const TELEPORT_COST: f32 = 25.;
 
-pub const N_FOV_RAYS: u32 = 9;
+pub const N_FOV_RAYS: u32 = 15;
 
 pub const BTN_DIM_RECT: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.3, HEIGHT as f32 * 0.125);
 pub const BTN_DIM_SQUARE: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.0625, HEIGHT as f32 * 0.083);
 
-pub const BTN_PLAY_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.33);
-pub const BTN_INFO_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.5833);
+pub const BTN_PLAY_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.2);
+pub const BTN_INFO_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.4);
+pub const BTN_KEYBINDINGS_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.5825, HEIGHT as f32 * 0.6);
 pub const BTN_BACK_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.0375, HEIGHT as f32 * 0.18);
 pub const BTN_BOTTOM_LEFT_POS: glam::Vec2 = glam::vec2(WIDTH as f32 * 0.125, HEIGHT as f32 * 0.833);
 pub const BTN_BOTTOM_RIGHT_POS: glam::Vec2 =
