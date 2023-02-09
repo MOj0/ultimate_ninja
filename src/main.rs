@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod animation_component;
 mod assets;
 mod camera_component;
