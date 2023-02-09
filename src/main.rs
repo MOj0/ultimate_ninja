@@ -76,7 +76,7 @@ pub struct Game {
     menu_square: graphics::Mesh,
     keybind_map: HashMap<String, util::MyKeyCode>,
     keybind_input: Option<util::MyKeyCode>,
-    grid_line: graphics::Mesh,
+    grid_mesh: graphics::MeshBatch,
     n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
@@ -286,6 +286,8 @@ impl Game {
         )
         .unwrap();
 
+        let grid_mesh = graphics::MeshBatch::new(grid_line).unwrap();
+
         let network_system = NetworkSystem::new();
 
         Game {
@@ -312,7 +314,7 @@ impl Game {
             menu_square,
             keybind_map,
             keybind_input: None,
-            grid_line,
+            grid_mesh,
             n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
@@ -1325,41 +1327,39 @@ When you complete your mission, a pathway to the next level will appear"
         }
 
         if self.debug_draw {
-            graphics::draw(
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
                 &util::make_text(format!("{} / {}", n_objects_drawn, self.n_objects), 24.),
-                DrawParam::from((glam::vec2(8., 40.),)),
-            )?;
-            graphics::draw(
+                glam::vec2(8., 40.),
+                None,
+            );
+            graphics::queue_text(
                 ctx,
-                quad_ctx,
                 &util::make_text(
                     format!("player grid index: {}", self.player.transform.grid_index),
                     24.,
                 ),
-                DrawParam::from((glam::vec2(8., 80.),)),
-            )?;
+                glam::vec2(8., 80.),
+                None,
+            );
 
             // Draw grid
+            self.grid_mesh.clear();
             for x in (0..=constants::MAX_WORLD_X).step_by(constants::GRID_CELL_SIZE) {
-                sprite_component::render_mesh(
-                    ctx,
-                    quad_ctx,
-                    &self.grid_line,
+                self.grid_mesh.add(
                     DrawParam::default()
                         .dest(self.camera.world_position(glam::vec2(x as f32, 0.)))
                         .rotation(constants::PI / 2.),
-                )?;
+                );
             }
             for y in (0..=constants::MAX_WORLD_Y).step_by(constants::GRID_CELL_SIZE) {
-                sprite_component::render_mesh(
-                    ctx,
-                    quad_ctx,
-                    &self.grid_line,
+                self.grid_mesh.add(
                     DrawParam::default().dest(self.camera.world_position(glam::vec2(0., y as f32))),
-                )?;
+                );
             }
+
+            self.grid_mesh
+                .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
         }
 
         graphics::draw_queued_text(
