@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 
 use crate::animation_component::AnimationComponent;
@@ -336,82 +335,6 @@ pub fn compute_grid_index(position: &glam::Vec2) -> isize {
     let y = position.y as usize / constants::GRID_CELL_SIZE;
 
     (x + y * constants::MAX_WORLD_X as usize / constants::GRID_CELL_SIZE) as isize
-}
-
-pub fn config_filename() -> String {
-    if cfg!(windows) {
-        let win_home = std::env::var("userprofile").unwrap_or_default();
-        if win_home.len() > 0 {
-            return format!("{}\\{}", win_home, constants::CONFIG_FILENAME);
-        }
-    } else if cfg!(unix) {
-        let unix_user = std::env::var("USER").unwrap_or_default();
-        if unix_user.len() > 0 {
-            return format!("/home/{}/{}", unix_user, constants::CONFIG_FILENAME);
-        }
-    }
-
-    constants::CONFIG_FILENAME.to_owned()
-}
-
-pub fn read_config(filename: &str) -> (bool, bool, bool, HashMap<String, MyKeyCode>) {
-    let data = std::fs::read_to_string(filename).unwrap_or_default();
-    let config: serde_json::Value = serde_json::from_str(&data).unwrap_or_default();
-
-    let mut keybind_map: HashMap<String, MyKeyCode> = HashMap::new();
-
-    match config {
-        serde_json::Value::Object(m) => {
-            let is_muted = m
-                .get("mute")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(false))
-                .unwrap_or(false);
-            let are_particles_activated = m
-                .get("particles")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(true))
-                .unwrap_or(true);
-            let is_skip_tutorial = m
-                .get("skip_tutorial")
-                .and_then(|val| Some(val.as_bool()))
-                .unwrap_or(Some(false))
-                .unwrap_or(false);
-
-            keybind_map.insert("up".to_owned(), get_keycode(&m, "up", 59));
-            keybind_map.insert("left".to_owned(), get_keycode(&m, "left", 57));
-            keybind_map.insert("down".to_owned(), get_keycode(&m, "down", 58));
-            keybind_map.insert("right".to_owned(), get_keycode(&m, "right", 56));
-            keybind_map.insert("sneak".to_owned(), get_keycode(&m, "sneak", 36));
-            keybind_map.insert("sprint".to_owned(), get_keycode(&m, "sprint", 0));
-            keybind_map.insert("teleport".to_owned(), get_keycode(&m, "teleport", 23));
-            keybind_map.insert("stealth".to_owned(), get_keycode(&m, "stealth", 21));
-            keybind_map.insert("attack".to_owned(), get_keycode(&m, "attack", 18));
-            keybind_map.insert("restart".to_owned(), get_keycode(&m, "restart", 35));
-
-            return (
-                is_muted,
-                are_particles_activated,
-                is_skip_tutorial,
-                keybind_map,
-            );
-        }
-        _ => (),
-    }
-
-    (false, true, false, HashMap::new())
-}
-
-fn get_keycode(
-    map: &serde_json::Map<String, serde_json::Value>,
-    key: &str,
-    default: u64,
-) -> MyKeyCode {
-    map.get(key)
-        .and_then(|val| Some(val.as_u64()))
-        .unwrap_or(Some(default))
-        .unwrap_or(default)
-        .into()
 }
 
 pub struct MyKeyCode(pub ggez::event::KeyCode);

@@ -10,7 +10,6 @@ mod level;
 mod look_component;
 mod mouse_input_handler;
 mod move_component;
-mod network_system;
 mod overlay_system;
 mod particle_system;
 mod sound_collection;
@@ -25,10 +24,10 @@ use std::collections::HashMap;
 
 use crate::assets::Assets;
 use crate::mouse_input_handler::MouseInputHandler;
-use crate::network_system::NetworkSystem;
 use crate::sound_collection::SoundCollection;
 use crate::sprite_component::SpriteComponent;
 use crate::transform_component::TransformComponent;
+use crate::util::MyKeyCode;
 
 extern crate good_web_game as ggez;
 
@@ -43,8 +42,6 @@ pub enum GameState {
     Info,
     Keybindings,
     KeybindInput(String),
-    Leaderboard,
-    SubmitTime,
     Game,
     Pause,
     LevelAnimation,
@@ -80,19 +77,25 @@ pub struct Game {
     n_objects: usize,
     curr_level_time: f32,
     level_times: [f32; level::LEVEL_COUNT],
-    leaderboard_str: Option<String>,
-    network_system: NetworkSystem,
-    tokio_runtime: tokio::runtime::Runtime,
-    player_name: String,
     is_skip_tutorial: bool,
 }
 
 impl Game {
     pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
-        let (is_muted, are_particles_activated, is_skip_tutorial, keybind_map) =
-            util::read_config(&util::config_filename());
+        let (is_muted, are_particles_activated, is_skip_tutorial) = (false, true, false);
 
-        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let keybind_map = HashMap::from([
+            ("up".to_owned(), MyKeyCode(ggez::event::KeyCode::Up)),
+            ("down".to_owned(), MyKeyCode(ggez::event::KeyCode::Down)),
+            ("left".to_owned(), MyKeyCode(ggez::event::KeyCode::Left)),
+            ("right".to_owned(), MyKeyCode(ggez::event::KeyCode::Right)),
+            ("sneak".to_owned(), MyKeyCode(ggez::event::KeyCode::S)),
+            ("sprint".to_owned(), MyKeyCode(ggez::event::KeyCode::Space)),
+            ("stealth".to_owned(), MyKeyCode(ggez::event::KeyCode::D)),
+            ("teleport".to_owned(), MyKeyCode(ggez::event::KeyCode::F)),
+            ("attack".to_owned(), MyKeyCode(ggez::event::KeyCode::A)),
+            ("restart".to_owned(), MyKeyCode(ggez::event::KeyCode::R)),
+        ]);
 
         let game_state = GameState::Menu;
 
@@ -288,8 +291,6 @@ impl Game {
 
         let grid_mesh = graphics::MeshBatch::new(grid_line).unwrap();
 
-        let network_system = NetworkSystem::new();
-
         Game {
             game_state,
             assets,
@@ -318,10 +319,6 @@ impl Game {
             n_objects: 0,
             curr_level_time: 0.,
             level_times: [0.; level::LEVEL_COUNT],
-            leaderboard_str: None,
-            network_system,
-            tokio_runtime,
-            player_name: String::new(),
             is_skip_tutorial,
         }
     }
@@ -473,8 +470,11 @@ impl Game {
             .add(graphics::DrawParam::default().dest(constants::BTN_INFO_POS));
         self.menu_rectangle
             .add(graphics::DrawParam::default().dest(constants::BTN_KEYBINDINGS_POS));
-        self.menu_rectangle
-            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS));
+        self.menu_rectangle.add(
+            graphics::DrawParam::default()
+                .dest(constants::BTN_BOTTOM_RIGHT_POS)
+                .color(graphics::Color::new(0.25, 0.25, 0.25, 0.75)),
+        );
 
         self.menu_rectangle
             .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
@@ -521,6 +521,19 @@ impl Game {
         graphics::draw(
             ctx,
             quad_ctx,
+            &util::make_text("Only available on standalone app".into(), 18.),
+            graphics::DrawParam::default().dest(
+                constants::BTN_BOTTOM_RIGHT_POS
+                    + glam::vec2(
+                        constants::WIDTH as f32 * 0.02 - 45.,
+                        constants::HEIGHT as f32 * 0.033 - 42.,
+                    ),
+            ),
+        )?;
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
             &util::make_text("Leaderboard".into(), 36.),
             graphics::DrawParam::default().dest(
                 constants::BTN_BOTTOM_RIGHT_POS
@@ -530,7 +543,6 @@ impl Game {
                     ),
             ),
         )?;
-
         graphics::draw(
             ctx,
             quad_ctx,
@@ -809,80 +821,6 @@ When you complete your mission, a pathway to the next level will appear"
         Ok(())
     }
 
-    fn draw_leaderboard(
-        &mut self,
-        ctx: &mut Context,
-        quad_ctx: &mut miniquad::Context,
-    ) -> Result<(), ggez::GameError> {
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text("Leaderboard".into(), 42.),
-            graphics::DrawParam::default().dest(glam::vec2(
-                constants::WIDTH as f32 * 0.35,
-                constants::HEIGHT as f32 * 0.0833,
-            )),
-        )?;
-
-        self.menu_rectangle.clear();
-
-        self.menu_rectangle
-            .add(graphics::DrawParam::default().dest(constants::BTN_BACK_POS));
-        self.menu_rectangle.add(
-            graphics::DrawParam::default()
-                .dest(glam::vec2(
-                    constants::WIDTH as f32 * 0.0375,
-                    constants::HEIGHT as f32 * 0.4166,
-                ))
-                .scale(glam::vec2(3., 4.55)),
-        );
-
-        self.menu_rectangle
-            .draw(ctx, quad_ctx, graphics::DrawParam::default())?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text("Back".into(), 36.),
-            graphics::DrawParam::default().dest(
-                constants::BTN_BACK_POS
-                    + glam::vec2(
-                        constants::WIDTH as f32 * 0.1,
-                        constants::HEIGHT as f32 * 0.033,
-                    ),
-            ),
-        )?;
-
-        if self.leaderboard_str.is_none()
-            && self.network_system.submit_finished()
-            && self.network_system.leaderboard_ready()
-        {
-            let mut network = NetworkSystem::new();
-            std::mem::swap(&mut network, &mut self.network_system);
-
-            self.leaderboard_str = Some(network.get_response());
-        }
-
-        let leaderboard_str = self
-            .leaderboard_str
-            .clone()
-            .unwrap_or("Requesting leaderboard...".to_owned());
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text(leaderboard_str, 18.),
-            graphics::DrawParam::default().dest(glam::vec2(
-                constants::WIDTH as f32 * 0.1,
-                constants::HEIGHT as f32 * 0.45,
-            )),
-        )?;
-
-        self.curr_level_time += ggez::timer::delta(ctx).as_secs_f32();
-
-        Ok(())
-    }
-
     fn draw_end_screen(
         &mut self,
         ctx: &mut Context,
@@ -890,14 +828,9 @@ When you complete your mission, a pathway to the next level will appear"
     ) -> Result<(), ggez::GameError> {
         self.menu_rectangle.clear();
 
-        self.menu_rectangle
-            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_LEFT_POS));
-        self.menu_rectangle
-            .add(graphics::DrawParam::default().dest(constants::BTN_BOTTOM_RIGHT_POS));
         self.menu_rectangle.add(
             graphics::DrawParam::default()
-                .dest(glam::vec2(180., 410.))
-                .scale(glam::vec2(2., 1.)),
+                .dest((constants::BTN_BOTTOM_LEFT_POS + constants::BTN_BOTTOM_RIGHT_POS) / 2.),
         );
 
         self.menu_rectangle
@@ -907,16 +840,10 @@ When you complete your mission, a pathway to the next level will appear"
             ctx,
             quad_ctx,
             &util::make_text("Menu".into(), 36.),
-            graphics::DrawParam::default()
-                .dest(constants::BTN_BOTTOM_LEFT_POS + glam::vec2(80., 20.)),
-        )?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text("Submit".into(), 36.),
-            graphics::DrawParam::default()
-                .dest(constants::BTN_BOTTOM_RIGHT_POS + glam::vec2(65., 20.)),
+            graphics::DrawParam::default().dest(
+                (constants::BTN_BOTTOM_LEFT_POS + constants::BTN_BOTTOM_RIGHT_POS) / 2.
+                    + glam::vec2(80., 20.),
+            ),
         )?;
 
         let level_times_str = (level::TUTORIAL_COUNT..level::LEVEL_COUNT)
@@ -949,19 +876,6 @@ When you complete your mission, a pathway to the next level will appear"
             graphics::DrawParam::default().dest(glam::vec2(225., 325.)),
         )?;
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text("Enter username:".into(), 32.),
-            graphics::DrawParam::default().dest(glam::vec2(200., 375.)),
-        )?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &util::make_text(format!("{}", self.player_name), 32.),
-            graphics::DrawParam::default().dest(glam::vec2(200., 430.)),
-        )?;
         Ok(())
     }
 
@@ -1372,27 +1286,6 @@ When you complete your mission, a pathway to the next level will appear"
 
         Ok(())
     }
-
-    fn write_config(&self, filename: &str) {
-        let json = serde_json::json!(
-        {
-            "mute": !self.sound_collection.is_on,
-            "particles": self.particle_system.is_activated,
-            "skip_tutorial": self.is_skip_tutorial,
-            "up": self.keybind_map.get("up").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Up)).0 as u8,
-            "down": self.keybind_map.get("down").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Down)).0 as u8,
-            "left": self.keybind_map.get("left").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Left)).0 as u8,
-            "right": self.keybind_map.get("right").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Right)).0 as u8,
-            "sneak": self.keybind_map.get("sneak").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::S)).0 as u8,
-            "sprint": self.keybind_map.get("sprint").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::Space)).0 as u8,
-            "stealth": self.keybind_map.get("stealth").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::D)).0 as u8,
-            "teleport": self.keybind_map.get("teleport").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::F)).0 as u8,
-            "attack": self.keybind_map.get("attack").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::A)).0 as u8,
-            "restart": self.keybind_map.get("restart").unwrap_or(&util::MyKeyCode(ggez::event::KeyCode::R)).0 as u8,
-        });
-
-        std::fs::write(filename, serde_json::to_string_pretty(&json).unwrap()).unwrap();
-    }
 }
 
 impl ggez::event::EventHandler<ggez::GameError> for Game {
@@ -1401,9 +1294,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         ctx: &mut Context,
         quad_ctx: &mut miniquad::Context,
     ) -> Result<(), ggez::GameError> {
-        // NOTE: Since this spawns a thread, it is okay to block here
-        self.tokio_runtime.block_on(self.network_system.tick());
-
         // Handle keybind change
         if let GameState::KeybindInput(key) = &self.game_state {
             if let Some(keybind) = &self.keybind_input {
@@ -1422,11 +1312,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         if self.game_state == GameState::Menu
             || self.game_state == GameState::Info
             || self.game_state == GameState::Keybindings
-            || self.game_state == GameState::Leaderboard
             || self.game_state == GameState::GameOver
             || self.game_state == GameState::Pause
             || self.game_state == GameState::EndScreen
-            || self.game_state == GameState::SubmitTime
         {
             return Ok(());
         }
@@ -1493,10 +1381,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             return self.draw_keybindings(ctx, quad_ctx);
         }
 
-        if self.game_state == GameState::Leaderboard {
-            return self.draw_leaderboard(ctx, quad_ctx);
-        }
-
         if self.game_state == GameState::EndScreen {
             return self.draw_end_screen(ctx, quad_ctx);
         }
@@ -1513,10 +1397,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         _repeat: bool,
     ) {
         if self.game_state == GameState::EndScreen {
-            if keycode == KeyCode::Backspace {
-                self.player_name.pop();
-            }
-
             return;
         }
 
@@ -1569,14 +1449,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             }
         }
 
-        match keycode {
-            KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
-            KeyCode::B => self.debug_draw = !self.debug_draw, // TODO: Delete this [debugging purposes]
-            KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
-            KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
-            KeyCode::P => entities::guards::alert_all(ctx, self), // TODO: Delete this [debugging purposes]
-            _ => (),
-        };
+        if let KeyCode::M = keycode {
+            self.sound_collection.is_on = !self.sound_collection.is_on;
+        }
     }
 
     fn key_up_event(
@@ -1648,17 +1523,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
         }
     }
 
-    fn text_input_event(
-        &mut self,
-        _ctx: &mut Context,
-        _quad_ctx: &mut miniquad::Context,
-        character: char,
-    ) {
-        if self.game_state == GameState::EndScreen && self.player_name.len() < 28 {
-            self.player_name.push(character);
-        }
-    }
-
     fn mouse_button_down_event(
         &mut self,
         ctx: &mut Context,
@@ -1672,7 +1536,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                 let curr_t = ggez::timer::time_since_start(ctx).as_secs_f32();
 
                 if self.game_state == GameState::Menu {
-                    let mut setting_changed = false;
                     let screen_size = quad_ctx.screen_size();
 
                     if util::rect_contains_point(
@@ -1682,8 +1545,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         glam::vec2(x, y),
                     ) {
                         self.sound_collection.is_on = !self.sound_collection.is_on;
-
-                        setting_changed = true;
                     } else if util::rect_contains_point(
                         screen_size,
                         constants::BTN_DIM_SQUARE,
@@ -1692,8 +1553,6 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                     ) {
                         self.particle_system
                             .set_activated(!self.particle_system.is_activated);
-
-                        setting_changed = true;
                     } else if util::rect_contains_point(
                         screen_size,
                         constants::BTN_DIM_SQUARE,
@@ -1701,19 +1560,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                         glam::vec2(x, y),
                     ) {
                         self.is_skip_tutorial = !self.is_skip_tutorial;
-
-                        setting_changed = true;
-                    }
-
-                    if setting_changed {
-                        self.write_config(&util::config_filename());
                     }
                 }
 
                 if self.game_state == GameState::Menu
                     || self.game_state == GameState::Info
                     || self.game_state == GameState::Keybindings
-                    || self.game_state == GameState::Leaderboard
                     || self.game_state == GameState::GameOver
                     || self.game_state == GameState::EndScreen
                     || self.game_state == GameState::Pause
@@ -1748,42 +1600,12 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
                                 self.game_state = GameState::Game
                             }
                         } else {
-                            if self.game_state == GameState::Keybindings
-                                && new_game_state == GameState::Menu
-                            {
-                                self.write_config(&util::config_filename());
-                            }
-
                             self.game_state = new_game_state;
                             self.curr_level_time = 0.;
 
                             if self.game_state == GameState::Menu {
                                 self.level_idx = 0;
                             }
-                        }
-
-                        if self.game_state == GameState::Leaderboard
-                            && !self.network_system.request_in_progress()
-                            && self.leaderboard_str.is_none()
-                        {
-                            self.network_system.do_request_leaderboard();
-                        }
-
-                        if self.game_state == GameState::SubmitTime {
-                            self.leaderboard_str = None;
-
-                            let total_time = self
-                                .level_times
-                                .iter()
-                                .skip(level::TUTORIAL_COUNT)
-                                .sum::<f32>();
-                            self.network_system.do_submit_time_and_reqeust_leaderboard(
-                                self.player_name.trim().to_owned(),
-                                total_time,
-                            );
-
-                            self.player_name = String::new();
-                            self.game_state = GameState::Leaderboard;
                         }
                     }
 

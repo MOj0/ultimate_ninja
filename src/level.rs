@@ -310,7 +310,6 @@ pub fn system(game_state: &mut Game) {
                 game_state.overlay_system.set_active_at(2, false);
 
                 game_state.is_skip_tutorial = true;
-                game_state.write_config(&util::config_filename());
             } else if game_state.target.is_dead()
                 || (game_state.player.transform.position - glam::vec2(100., 380.)).length() < 30.
             {

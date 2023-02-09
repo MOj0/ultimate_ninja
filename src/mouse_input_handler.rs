@@ -97,20 +97,9 @@ impl MouseInputHandler {
             ) {
                 return Some(GameState::Keybindings);
             }
-
-            if util::rect_contains_point(
-                screen_size,
-                constants::BTN_DIM_RECT,
-                constants::BTN_BOTTOM_RIGHT_POS,
-                mouse_vec,
-            ) {
-                return Some(GameState::Leaderboard);
-            }
         }
 
-        if (*game_state == GameState::Info
-            || *game_state == GameState::Keybindings
-            || *game_state == GameState::Leaderboard)
+        if (*game_state == GameState::Info || *game_state == GameState::Keybindings)
             && util::rect_contains_point(
                 screen_size,
                 constants::BTN_DIM_RECT,
@@ -143,16 +132,7 @@ impl MouseInputHandler {
             if util::rect_contains_point(
                 screen_size,
                 constants::BTN_DIM_RECT,
-                constants::BTN_BOTTOM_RIGHT_POS,
-                mouse_vec,
-            ) {
-                return Some(GameState::SubmitTime);
-            }
-
-            if util::rect_contains_point(
-                screen_size,
-                constants::BTN_DIM_RECT,
-                constants::BTN_BOTTOM_LEFT_POS,
+                (constants::BTN_BOTTOM_LEFT_POS + constants::BTN_BOTTOM_RIGHT_POS) / 2.,
                 mouse_vec,
             ) {
                 return Some(GameState::Menu);
