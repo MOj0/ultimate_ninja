@@ -1569,14 +1569,9 @@ impl ggez::event::EventHandler<ggez::GameError> for Game {
             }
         }
 
-        match keycode {
-            KeyCode::M => self.sound_collection.is_on = !self.sound_collection.is_on,
-            KeyCode::B => self.debug_draw = !self.debug_draw, // TODO: Delete this [debugging purposes]
-            KeyCode::L => self.next_level(ctx, quad_ctx, true), // TODO: Delete this [debugging purposes]
-            KeyCode::K => self.player.transform.set(self.target.transform.position), // TODO: Delete this [debugging purposes]
-            KeyCode::P => entities::guards::alert_all(ctx, self), // TODO: Delete this [debugging purposes]
-            _ => (),
-        };
+        if let KeyCode::M = keycode {
+            self.sound_collection.is_on = !self.sound_collection.is_on;
+        }
     }
 
     fn key_up_event(
